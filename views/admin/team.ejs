@@ -1,0 +1,92 @@
+<%- include('../partials/admin-open') %>
+
+<%
+  function err(f) { return errors[f] ? 'is-invalid' : ''; }
+  function val(f) { return values[f] !== undefined && values[f] !== null ? values[f] : ''; }
+%>
+
+<div class="panel">
+  <div class="panel__h"><h2>Staff accounts</h2></div>
+  <div class="panel__b panel__b--flush">
+    <div class="tablewrap">
+      <table class="table">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Last sign-in</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <% admins.forEach(function (a) { %>
+            <tr>
+              <td><strong><%= a.name %></strong><% if (a.id === admin.id) { %> <span class="mono-meta">(you)</span><% } %></td>
+              <td class="mono-meta"><%= a.email %></td>
+              <td>
+                <form class="inline-form" method="post" action="/admin/team/<%= a.id %>/role">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <select name="role" onchange="this.form.submit()" <%= a.id === admin.id ? 'disabled' : '' %>
+                          style="border:var(--bd);background:var(--paper);padding:5px 8px;font-family:var(--mono);font-size:var(--fs-label);text-transform:uppercase">
+                    <option value="admin" <%= a.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                    <option value="editor" <%= a.role === 'editor' ? 'selected' : '' %>>Editor</option>
+                  </select>
+                </form>
+              </td>
+              <td class="nowrap mono-meta"><%= a.last_login_at ? fmt.ago(a.last_login_at) : 'never' %></td>
+              <td><% if (a.is_active) { %><span class="pill pill--on">Active</span><% } else { %><span class="pill pill--off">Off</span><% } %></td>
+              <td class="table__actions">
+                <% if (a.id !== admin.id) { %>
+                  <form class="inline-form" method="post" action="/admin/team/<%= a.id %>/active">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="is_active" value="<%= a.is_active ? '' : '1' %>">
+                    <button class="btn btn--mute btn--sm" type="submit"><%= a.is_active ? 'Deactivate' : 'Activate' %></button>
+                  </form>
+                <% } %>
+                <form class="inline-form" method="post" action="/admin/team/<%= a.id %>/password" data-confirm="Set a new password for <%= a.name %>?" onsubmit="var p=prompt('New password (min 8 chars) for <%= a.name %>:'); if(!p){return false;} this.querySelector('[name=password]').value=p;">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <input type="hidden" name="password" value="">
+                  <button class="btn btn--ghost btn--sm" type="submit">Reset password</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel__h"><h2>Add a staff member</h2></div>
+  <div class="panel__b">
+    <form class="form" method="post" action="/admin/team">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="formgrid formgrid--2">
+        <div class="field <%= err('name') %>">
+          <label for="name">Name *</label>
+          <input type="text" id="name" name="name" value="<%= val('name') %>" required>
+          <p class="field__error"><%= errors.name || '' %></p>
+        </div>
+        <div class="field <%= err('email') %>">
+          <label for="email">Email *</label>
+          <input type="email" id="email" name="email" value="<%= val('email') %>" autocomplete="off" required>
+          <p class="field__error"><%= errors.email || '' %></p>
+        </div>
+      </div>
+      <div class="formgrid formgrid--2">
+        <div class="field <%= err('password') %>">
+          <label for="password">Password *</label>
+          <input type="password" id="password" name="password" autocomplete="new-password" required>
+          <p class="field__error"><%= errors.password || '' %></p>
+          <p class="field__hint">At least 8 characters.</p>
+        </div>
+        <div class="field">
+          <label for="role">Role</label>
+          <select id="role" name="role">
+            <option value="editor" <%= val('role') === 'editor' ? 'selected' : '' %>>Editor — batches, products, reports</option>
+            <option value="admin" <%= val('role') === 'admin' ? 'selected' : '' %>>Admin — full access</option>
+          </select>
+        </div>
+      </div>
+      <div class="formfoot">
+        <button class="btn btn--solid" type="submit">Add staff member</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/admin-close') %>

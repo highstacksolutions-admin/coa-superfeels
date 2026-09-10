@@ -1,0 +1,32 @@
+{
+  "name": "superfeels-coa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Batch lookup and lab report portal for Super Feels (coa.superfeels.com)",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "migrate": "node src/db/migrate.js",
+    "seed:admin": "node src/db/seed-admin.js",
+    "seed:demo": "node scripts/seed-demo.js",
+    "check:storage": "node scripts/check-storage-exposure.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-mysql-session": "^3.0.3",
+    "express-rate-limit": "^7.4.1",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "multer": "^2.2.0",
+    "mysql2": "^3.11.5",
+    "nodemailer": "^6.9.15",
+    "sharp": "^0.34.4"
+  }
+}

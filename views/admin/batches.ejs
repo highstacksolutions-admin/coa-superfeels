@@ -1,0 +1,92 @@
+<%- include('../partials/admin-open') %>
+
+<form class="filters" method="get" action="/admin/batches">
+  <div class="field">
+    <label for="q">Search</label>
+    <input type="text" id="q" name="q" value="<%= q %>" placeholder="Batch code or product">
+  </div>
+  <div class="field">
+    <label for="product">Product</label>
+    <select id="product" name="product">
+      <option value="">All products</option>
+      <% products.forEach(function (p) { %>
+        <option value="<%= p.id %>" <%= String(productId) === String(p.id) ? 'selected' : '' %>><%= p.name %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label for="status">Result</label>
+    <select id="status" name="status">
+      <option value="">Any</option>
+      <% coa.BATCH_STATUSES.forEach(function (s) { %>
+        <option value="<%= s %>" <%= status === s ? 'selected' : '' %>><%= coa.statusLabel(s) %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label for="published">Visibility</label>
+    <select id="published" name="published">
+      <option value="">Any</option>
+      <option value="1" <%= pubFilter === '1' ? 'selected' : '' %>>Live</option>
+      <option value="0" <%= pubFilter === '0' ? 'selected' : '' %>>Draft</option>
+    </select>
+  </div>
+  <div class="filters__go">
+    <button class="btn btn--solid btn--sm" type="submit">Filter</button>
+    <a class="btn btn--mute btn--sm" href="/admin/batches">Clear</a>
+  </div>
+</form>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+  <p class="mono-meta"><%= fmt.count(total) %> batch<%= total === 1 ? '' : 'es' %></p>
+  <a class="btn btn--solid btn--sm" href="/admin/batches/new">Add batch</a>
+</div>
+
+<div class="panel">
+  <div class="panel__b panel__b--flush">
+    <% if (batches.length) { %>
+      <div class="tablewrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Batch</th><th>Product</th><th>Result</th>
+              <th class="num">THC</th><th class="num">CBD</th>
+              <th>Report</th><th class="nowrap">Tested</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% batches.forEach(function (b) { %>
+              <tr>
+                <td class="nowrap"><a href="/admin/batches/<%= b.id %>"><span class="code"><%= b.batch_code %></span></a></td>
+                <td><%= b.product_name %></td>
+                <td><span class="status status--<%= coa.statusTone(b.status) %>"><%= coa.statusLabel(b.status) %></span></td>
+                <td class="num"><%= b.total_thc !== null ? Number(b.total_thc).toFixed(2) : '—' %></td>
+                <td class="num"><%= b.total_cbd !== null ? Number(b.total_cbd).toFixed(2) : '—' %></td>
+                <td>
+                  <% if (b.files > 0) { %><span class="pill pill--on">PDF</span><% } else { %><span class="pill pill--warn">None</span><% } %>
+                  <% if (b.panels > 0) { %><span class="pill">Results</span><% } %>
+                </td>
+                <td class="nowrap mono-meta"><%= fmt.date(b.tested_on) %></td>
+                <td><% if (b.is_published) { %><span class="pill pill--on">Live</span><% } else { %><span class="pill pill--off">Draft</span><% } %></td>
+                <td class="table__actions">
+                  <% if (b.is_published) { %><a class="btn btn--mute btn--sm" href="/coa/<%= encodeURIComponent(b.batch_code) %>" target="_blank" rel="noopener">View</a><% } %>
+                  <a class="btn btn--ghost btn--sm" href="/admin/batches/<%= b.id %>">Edit</a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="empty">
+        <p class="empty__h">No batches<%= q || status || pubFilter || productId ? ' match that filter' : ' yet' %></p>
+        <p class="empty__d"><% if (q || status || pubFilter || productId) { %>Try clearing the filter.<% } else { %>A batch is one production run of a product, with one lab report. Add the first one.<% } %></p>
+        <div class="empty__a"><a class="btn btn--solid btn--sm" href="/admin/batches/new">Add batch</a></div>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/pager', { page: page, pages: pages, base: '/admin/batches', query: { q: q, status: status, published: pubFilter, product: productId } }) %>
+
+<%- include('../partials/admin-close') %>

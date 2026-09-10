@@ -1,0 +1,59 @@
+<%- include('./head') %>
+<div class="adm">
+  <aside class="adm__side">
+    <div>
+      <a class="adm__brand" href="/admin">
+        <img src="/img/superfeels-logo-light.svg" alt="Super Feels" width="58" height="52">
+      </a>
+      <p class="adm__tag">COA admin</p>
+    </div>
+
+    <nav class="adm__nav" aria-label="Admin">
+      <a href="/admin" class="<%= adminPath === '/' ? 'is-active' : '' %>">Dashboard</a>
+
+      <p class="adm__navh">Library</p>
+      <a href="/admin/batches" class="<%= adminPath.indexOf('/batches') === 0 ? 'is-active' : '' %>">Batches</a>
+      <a href="/admin/batches/new" class="<%= adminPath === '/batches/new' ? 'is-active' : '' %>">Add batch</a>
+      <a href="/admin/products" class="<%= adminPath.indexOf('/products') === 0 ? 'is-active' : '' %>">Products</a>
+      <a href="/admin/labs" class="<%= adminPath.indexOf('/labs') === 0 ? 'is-active' : '' %>">Testing labs</a>
+
+      <% if (admin.role === 'admin') { %>
+        <p class="adm__navh">Insight</p>
+        <a href="/admin/analytics" class="<%= adminPath.indexOf('/analytics') === 0 ? 'is-active' : '' %>">Analytics</a>
+        <a href="/admin/enquiries" class="<%= adminPath.indexOf('/enquiries') === 0 ? 'is-active' : '' %>">
+          Enquiries
+          <% if (typeof newEnquiries !== 'undefined' && newEnquiries > 0) { %><span class="adm__count"><%= newEnquiries %></span><% } %>
+        </a>
+
+        <p class="adm__navh">Site</p>
+        <a href="/admin/content" class="<%= adminPath.indexOf('/content') === 0 ? 'is-active' : '' %>">Pages &amp; copy</a>
+        <a href="/admin/team" class="<%= adminPath.indexOf('/team') === 0 ? 'is-active' : '' %>">Team</a>
+        <a href="/admin/activity" class="<%= adminPath.indexOf('/activity') === 0 ? 'is-active' : '' %>">Activity</a>
+        <a href="/admin/system" class="<%= adminPath.indexOf('/system') === 0 ? 'is-active' : '' %>">System</a>
+      <% } %>
+
+      <p class="adm__navh">Public site</p>
+      <a href="/" target="_blank" rel="noopener">Open the site &nearr;</a>
+    </nav>
+
+    <div class="adm__who">
+      <b><%= admin.name %></b>
+      <%= admin.role === 'admin' ? 'Full access' : 'Publishing only' %>
+      <form method="post" action="/admin/logout">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn--light btn--sm btn--wide" type="submit">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="adm__main">
+    <div class="adm__bar">
+      <h1 class="adm__h"><%= typeof pageHeading !== 'undefined' ? pageHeading : title %></h1>
+      <div class="adm__actions"><%- typeof pageActions !== 'undefined' ? pageActions : '' %></div>
+    </div>
+    <main id="main" class="adm__body">
+      <% if (typeof flash !== 'undefined' && flash) { %>
+        <div class="notice notice--<%= flash.type === 'error' ? 'error' : 'ok' %>" style="margin-bottom:24px">
+          <strong><%= flash.type === 'error' ? 'Not done' : 'Done' %></strong><%= flash.message %>
+        </div>
+      <% } %>

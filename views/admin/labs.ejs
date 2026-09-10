@@ -1,0 +1,37 @@
+<%- include('../partials/admin-open') %>
+
+<div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+  <a class="btn btn--solid btn--sm" href="/admin/labs/new">Add lab</a>
+</div>
+
+<div class="panel">
+  <div class="panel__b panel__b--flush">
+    <% if (labs.length) { %>
+      <div class="tablewrap">
+        <table class="table">
+          <thead><tr><th>Name</th><th>Licence</th><th>Accreditation</th><th class="num">Batches</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <% labs.forEach(function (l) { %>
+              <tr>
+                <td><a href="/admin/labs/<%= l.id %>"><strong><%= l.name %></strong></a></td>
+                <td class="mono-meta"><%= l.license_no || '—' %></td>
+                <td><%= l.accreditation || '—' %></td>
+                <td class="num"><%= l.batch_count %></td>
+                <td><% if (l.is_active) { %><span class="pill pill--on">Active</span><% } else { %><span class="pill pill--off">Inactive</span><% } %></td>
+                <td class="table__actions"><a class="btn btn--ghost btn--sm" href="/admin/labs/<%= l.id %>">Edit</a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="empty">
+        <p class="empty__h">No labs yet</p>
+        <p class="empty__d">Add the laboratories that test your batches. Each report is attributed to one, which is what tells a customer the testing is independent.</p>
+        <div class="empty__a"><a class="btn btn--solid btn--sm" href="/admin/labs/new">Add lab</a></div>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/admin-close') %>

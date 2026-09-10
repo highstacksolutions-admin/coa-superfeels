@@ -1,0 +1,25 @@
+<%
+  // Shared pager. `base` is the path, `query` the current filter state to carry
+  // across page links. Rendered only when there is more than one page.
+  if (pages > 1) {
+    var qp = function (p) {
+      var parts = ['page=' + p];
+      Object.keys(query || {}).forEach(function (k) {
+        var v = query[k];
+        if (v !== undefined && v !== null && v !== '') parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
+      });
+      return base + '?' + parts.join('&');
+    };
+    var from = Math.max(1, page - 2);
+    var to = Math.min(pages, page + 2);
+%>
+<nav class="pager" aria-label="Pages">
+  <% if (page > 1) { %><a href="<%= qp(page - 1) %>">Prev</a><% } else { %><span class="is-off">Prev</span><% } %>
+  <% if (from > 1) { %><a href="<%= qp(1) %>">1</a><% if (from > 2) { %><span class="is-off">…</span><% } %><% } %>
+  <% for (var i = from; i <= to; i++) { %>
+    <% if (i === page) { %><span class="is-current"><%= i %></span><% } else { %><a href="<%= qp(i) %>"><%= i %></a><% } %>
+  <% } %>
+  <% if (to < pages) { %><% if (to < pages - 1) { %><span class="is-off">…</span><% } %><a href="<%= qp(pages) %>"><%= pages %></a><% } %>
+  <% if (page < pages) { %><a href="<%= qp(page + 1) %>">Next</a><% } else { %><span class="is-off">Next</span><% } %>
+</nav>
+<% } %>

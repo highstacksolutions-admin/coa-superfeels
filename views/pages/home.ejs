@@ -1,0 +1,95 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<main id="main">
+
+  <section class="hero">
+    <div class="hero__in">
+      <div class="hero__copy">
+        <p class="eyebrow">Certificates of analysis</p>
+        <h1 class="hero__h">Every batch, <em>independently tested</em>.</h1>
+        <p class="hero__d"><%= settings.site_tagline || 'Enter the batch code printed on your product to see its full laboratory report — potency, pesticides, heavy metals, microbials and solvents.' %></p>
+
+        <% if (totals.batches > 0) { %>
+          <div class="hero__stats">
+            <div class="hero__stat">
+              <b><%= fmt.count(totals.batches) %></b>
+              <span>Batches published</span>
+            </div>
+            <div class="hero__stat">
+              <b><%= fmt.count(totals.products) %></b>
+              <span>Products covered</span>
+            </div>
+            <% if (totals.labs > 0) { %>
+              <div class="hero__stat">
+                <b><%= fmt.count(totals.labs) %></b>
+                <span><%= totals.labs === 1 ? 'Partner lab' : 'Partner labs' %></span>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+
+      <%# The one thing on this page that matters. Autofocus is deliberate: a
+          visitor arriving from a QR code has one intention and it is this. %>
+      <div class="lookup">
+        <h2 class="lookup__h">Look up your batch</h2>
+        <p class="lookup__d">Capitals and dashes do not matter.</p>
+
+        <% if (error) { %>
+          <div class="notice notice--error" style="margin-bottom:16px">
+            <strong>Nothing entered</strong><%= error %>
+          </div>
+        <% } %>
+
+        <form class="lookup__field" action="/lookup" method="get" id="lookup-form">
+          <label class="sr" for="batch">Batch code</label>
+          <input class="lookup__input" type="text" id="batch" name="batch"
+                 value="<%= entered %>"
+                 placeholder="SF-2409-A12"
+                 autocomplete="off" autocapitalize="characters" spellcheck="false"
+                 enterkeyhint="search" maxlength="80" required autofocus>
+          <button class="btn btn--solid btn--lg btn--wide" type="submit">
+            See the lab report
+            <span class="btn__spinner" aria-hidden="true"></span>
+          </button>
+        </form>
+
+        <p class="lookup__hint"><%= settings.lookup_help || 'The batch code is printed on the base of the container or along the bottom edge of the label.' %></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--tight bg-cream">
+    <div class="wrap">
+      <div class="shead">
+        <div>
+          <p class="eyebrow">How it works</p>
+          <h2 class="shead__h">From the label to the laboratory</h2>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <p class="step__n">Find the code</p>
+          <h3 class="step__h">On the product itself</h3>
+          <p class="step__d">Usually on the base of the container or along the bottom edge of the label, next to the best-before date. Not on the shipping box.</p>
+        </div>
+        <div class="step">
+          <p class="step__n">Enter it</p>
+          <h3 class="step__h">Exactly as you read it</h3>
+          <p class="step__d">Punctuation and capitals are ignored, so there is nothing to get wrong beyond the letters and digits themselves.</p>
+        </div>
+        <div class="step">
+          <p class="step__n">Read the report</p>
+          <h3 class="step__h">And keep a copy</h3>
+          <p class="step__d">Results appear in full on the page. The laboratory's own signed PDF is there to download alongside them.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+</main>
+
+<%- include('../partials/footer') %>
+<%- include('../partials/foot') %>

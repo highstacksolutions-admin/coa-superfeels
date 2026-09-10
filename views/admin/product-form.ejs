@@ -1,0 +1,122 @@
+<%- include('../partials/admin-open') %>
+
+<%
+  function err(f) { return errors[f] ? 'is-invalid' : ''; }
+  function val(f) { return values[f] !== undefined && values[f] !== null ? values[f] : ''; }
+%>
+
+<div class="panel">
+  <div class="panel__b">
+    <form class="form" method="post" action="<%= isNew ? '/admin/products/new' : '/admin/products/' + product.id %>" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="formgrid formgrid--2">
+        <div class="field <%= err('name') %>">
+          <label for="name">Name *</label>
+          <input type="text" id="name" name="name" value="<%= val('name') %>" required>
+          <p class="field__error"><%= errors.name || '' %></p>
+        </div>
+        <div class="field <%= err('slug') %>">
+          <label for="slug">Slug</label>
+          <input type="text" id="slug" name="slug" value="<%= val('slug') %>" data-slug-from="name">
+          <p class="field__error"><%= errors.slug || '' %></p>
+          <p class="field__hint">Used only internally for now.</p>
+        </div>
+      </div>
+
+      <div class="formgrid formgrid--3">
+        <div class="field">
+          <label for="sku">SKU</label>
+          <input type="text" id="sku" name="sku" value="<%= val('sku') %>">
+        </div>
+        <div class="field">
+          <label for="category">Category</label>
+          <input type="text" id="category" name="category" value="<%= val('category') %>" placeholder="e.g. Gummies, Oil">
+        </div>
+        <div class="field">
+          <label for="size_label">Size</label>
+          <input type="text" id="size_label" name="size_label" value="<%= val('size_label') %>" placeholder="e.g. 30ml, 20 ct">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" style="min-height:80px"><%= val('description') %></textarea>
+      </div>
+
+      <div class="formgrid formgrid--2">
+        <div class="field">
+          <label for="image">Product image</label>
+          <input type="file" id="image" name="image" accept="image/*">
+          <% if (product.image_path) { %>
+            <div style="margin-top:12px;display:flex;gap:12px;align-items:center">
+              <img class="table__thumb" src="<%= product.image_path %>" alt="" style="width:80px;height:60px">
+              <label class="field--check" style="margin:0"><input type="checkbox" name="remove_image" value="1"> <span style="font-size:13px">Remove current image</span></label>
+            </div>
+          <% } %>
+          <p class="field__hint">Resized and re-encoded on upload. JPEG, PNG, WebP or AVIF.</p>
+        </div>
+        <div class="field">
+          <label for="sort_order">Sort order</label>
+          <input type="number" id="sort_order" name="sort_order" value="<%= val('sort_order') || 0 %>">
+          <p class="field__hint">Lower shows first on the home page strip.</p>
+        </div>
+      </div>
+
+      <div class="fieldset">
+        <div class="field--check">
+          <input type="checkbox" id="is_published" name="is_published" value="1" <%= val('is_published') ? 'checked' : '' %>>
+          <label for="is_published"><strong>Published</strong> — shown on the home page when it has at least one live batch.</label>
+        </div>
+      </div>
+
+      <div class="formfoot">
+        <button class="btn btn--solid" type="submit">Save product</button>
+        <div class="formfoot__spacer"></div>
+        <a class="btn btn--mute" href="/admin/products">Back</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<% if (!isNew && typeof batches !== 'undefined') { %>
+  <div class="panel">
+    <div class="panel__h">
+      <h2>Batches of this product</h2>
+      <a class="btn btn--solid btn--sm" href="/admin/batches/new?product=<%= product.id %>">Add batch</a>
+    </div>
+    <div class="panel__b panel__b--flush">
+      <% if (batches.length) { %>
+        <div class="tablewrap">
+          <table class="table table--slim">
+            <tbody>
+              <% batches.forEach(function (b) { %>
+                <tr>
+                  <td><a href="/admin/batches/<%= b.id %>"><span class="code"><%= b.batch_code %></span></a></td>
+                  <td><span class="status status--<%= coa.statusTone(b.status) %>"><%= coa.statusLabel(b.status) %></span></td>
+                  <td class="nowrap mono-meta"><%= fmt.date(b.tested_on) %></td>
+                  <td><% if (b.is_published) { %><span class="pill pill--on">Live</span><% } else { %><span class="pill pill--off">Draft</span><% } %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="empty" style="border:0"><p class="empty__d" style="margin:0">No batches yet.</p></div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__h"><h2>Delete product</h2></div>
+    <div class="panel__b">
+      <form method="post" action="/admin/products/<%= product.id %>/delete" data-confirm="Delete <%= product.name %>?">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn--danger" type="submit">Delete this product</button>
+        <span class="muted" style="font-size:var(--fs-xs);margin-left:12px">Only possible once it has no batches.</span>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<%- include('../partials/admin-close') %>

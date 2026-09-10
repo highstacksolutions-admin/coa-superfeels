@@ -1,0 +1,76 @@
+<%- include('../partials/admin-open') %>
+
+<div class="stats">
+  <div class="stat <%= counts.new_ > 0 ? 'stat--warn' : '' %>">
+    <p class="stat__n"><%= fmt.count(counts.new_ || 0) %></p>
+    <p class="stat__l">New</p>
+  </div>
+  <div class="stat">
+    <p class="stat__n"><%= fmt.count(counts.read_ || 0) %></p>
+    <p class="stat__l">Read</p>
+  </div>
+  <div class="stat stat--ok">
+    <p class="stat__n"><%= fmt.count(counts.resolved_ || 0) %></p>
+    <p class="stat__l">Resolved</p>
+  </div>
+</div>
+
+<form class="filters" method="get" action="/admin/enquiries">
+  <div class="field">
+    <label for="q">Search</label>
+    <input type="text" id="q" name="q" value="<%= q %>" placeholder="Name, email, batch or subject">
+  </div>
+  <div class="field">
+    <label for="status">Status</label>
+    <select id="status" name="status">
+      <option value="">Any</option>
+      <option value="new" <%= status === 'new' ? 'selected' : '' %>>New</option>
+      <option value="read" <%= status === 'read' ? 'selected' : '' %>>Read</option>
+      <option value="resolved" <%= status === 'resolved' ? 'selected' : '' %>>Resolved</option>
+    </select>
+  </div>
+  <div class="filters__go">
+    <button class="btn btn--solid btn--sm" type="submit">Filter</button>
+    <a class="btn btn--mute btn--sm" href="/admin/enquiries">Clear</a>
+  </div>
+</form>
+
+<div class="panel">
+  <div class="panel__b panel__b--flush">
+    <% if (enquiries.length) { %>
+      <div class="tablewrap">
+        <table class="table">
+          <thead><tr><th>From</th><th>Batch</th><th>Subject</th><th>Received</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <% enquiries.forEach(function (e) { %>
+              <tr>
+                <td>
+                  <a href="/admin/enquiries/<%= e.id %>"><strong><%= e.name %></strong></a>
+                  <div class="mono-meta" style="margin-top:3px"><%= e.email %></div>
+                </td>
+                <td><% if (e.batch_code) { %><span class="code"><%= e.batch_code %></span><% } else { %>—<% } %></td>
+                <td><%= e.subject || (e.preview ? e.preview.slice(0, 60) + '…' : '—') %></td>
+                <td class="nowrap mono-meta"><%= fmt.ago(e.created_at) %></td>
+                <td>
+                  <% if (e.status === 'new') { %><span class="pill pill--warn">New</span>
+                  <% } else if (e.status === 'resolved') { %><span class="pill pill--on">Resolved</span>
+                  <% } else { %><span class="pill">Read</span><% } %>
+                </td>
+                <td class="table__actions"><a class="btn btn--ghost btn--sm" href="/admin/enquiries/<%= e.id %>">Open</a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="empty">
+        <p class="empty__h">No enquiries<%= q || status ? ' match that filter' : ' yet' %></p>
+        <p class="empty__d">Messages from the public contact form land here — and are stored even if the notification email cannot be sent.</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/pager', { page: page, pages: pages, base: '/admin/enquiries', query: { q: q, status: status } }) %>
+
+<%- include('../partials/admin-close') %>

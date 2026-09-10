@@ -1,0 +1,12 @@
+<% if (typeof flash !== 'undefined' && flash) { %>
+  <div class="toast-wrap" id="toasts" role="status" aria-live="polite">
+    <div class="toast toast--<%= flash.type === 'error' ? 'error' : 'ok' %>"><%= flash.message %></div>
+  </div>
+<% } else { %>
+  <div class="toast-wrap" id="toasts" role="status" aria-live="polite"></div>
+<% } %>
+<% var vf = typeof asset === 'function' ? asset : function (p) { return p; } %>
+<script src="<%= vf('/js/app.js') %>" defer></script>
+<% if (typeof pageScript !== 'undefined' && pageScript) { %><script src="<%= vf(pageScript) %>" defer></script><% } %>
+</body>
+</html>

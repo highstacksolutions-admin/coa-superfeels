@@ -1,0 +1,21 @@
+<%# Same lockup, mono type, sticky bar and hairline rule as the main site and
+    the wholesale portal. The nav is built from the published content pages, so
+    adding a page in the admin puts it here without a deploy. %>
+<header class="hdr">
+  <div class="hdr__in">
+    <a class="hdr__logo" href="/">
+      <img class="hdr__mark" src="/img/superfeels-logo.svg" alt="Super Feels" width="49" height="44">
+      <span class="hdr__label">Lab results</span>
+    </a>
+
+    <span class="hdr__spacer"></span>
+
+    <nav class="hdr__nav" aria-label="Primary">
+      <a class="hdr__link <%= currentPath === '/' ? 'is-active' : '' %>" href="/">Batch lookup</a>
+      <% (typeof navPages !== 'undefined' ? navPages : []).forEach(function (p) { %>
+        <a class="hdr__link <%= currentPath === '/' + p.slug ? 'is-active' : '' %>" href="/<%= p.slug %>"><%= p.title %></a>
+      <% }) %>
+      <a class="hdr__link <%= currentPath === '/contact' ? 'is-active' : '' %>" href="/contact">Contact</a>
+    </nav>
+  </div>
+</header>

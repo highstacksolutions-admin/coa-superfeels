@@ -1,0 +1,110 @@
+<%- include('../partials/admin-open') %>
+
+<% var chartMax = Math.max(1, ...chart.map(function (d) { return d.total; })); %>
+
+<div class="filters" style="justify-content:flex-end">
+  <div class="field" style="flex:0 0 auto">
+    <label for="days">Window</label>
+    <select id="days" name="days" onchange="location.href='/admin/analytics?days='+this.value">
+      <option value="7" <%= days === 7 ? 'selected' : '' %>>Last 7 days</option>
+      <option value="30" <%= days === 30 ? 'selected' : '' %>>Last 30 days</option>
+      <option value="90" <%= days === 90 ? 'selected' : '' %>>Last 90 days</option>
+    </select>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <p class="stat__n"><%= fmt.count(summary.lookups_today) %></p>
+    <p class="stat__l">Lookups today</p>
+  </div>
+  <div class="stat">
+    <p class="stat__n"><%= fmt.count(summary.lookups_all) %></p>
+    <p class="stat__l">Lookups all time</p>
+  </div>
+  <div class="stat <%= summary.missed_30d > 0 ? 'stat--warn' : '' %>">
+    <p class="stat__n"><%= fmt.count(summary.missed_30d) %></p>
+    <p class="stat__l">Not found · 30 days</p>
+  </div>
+  <div class="stat">
+    <p class="stat__n"><%= fmt.count(summary.downloads_all) %></p>
+    <p class="stat__l">PDF downloads all time</p>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel__h"><h2>Lookups over the last <%= days %> days</h2></div>
+  <div class="panel__b">
+    <% if (chart.some(function (d) { return d.total > 0; })) { %>
+      <div class="bars" role="img" aria-label="Daily lookups">
+        <% chart.forEach(function (d) { %>
+          <div class="bars__col" title="<%= d.day %>: <%= d.total %> lookups, <%= d.missed %> not found">
+            <div class="bars__stack" style="height:100%">
+              <div class="bars__missed" style="height:<%= Math.round((d.missed / chartMax) * 100) %>%"></div>
+              <div class="bars__found" style="height:<%= Math.round((d.found / chartMax) * 100) %>%"></div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+      <div class="legend">
+        <span class="legend__i"><span class="legend__k" style="background:var(--o)"></span> Found</span>
+        <span class="legend__i"><span class="legend__k" style="background:var(--fail)"></span> Not found</span>
+      </div>
+    <% } else { %>
+      <div class="empty"><p class="empty__d" style="margin:0">No lookups in this window yet.</p></div>
+    <% } %>
+  </div>
+</div>
+
+<div class="cols cols--2">
+  <div class="panel">
+    <div class="panel__h"><h2>Most looked-up batches</h2></div>
+    <div class="panel__b panel__b--flush">
+      <% if (topBatches.length) { %>
+        <div class="tablewrap">
+          <table class="table table--slim">
+            <tbody>
+              <% topBatches.forEach(function (b) { %>
+                <tr>
+                  <td>
+                    <a href="/coa/<%= encodeURIComponent(b.batch_code) %>" target="_blank" rel="noopener"><span class="code"><%= b.batch_code %></span></a>
+                    <div class="mono-meta" style="margin-top:3px"><%= b.product_name %></div>
+                  </td>
+                  <td class="num"><%= fmt.count(b.n) %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="empty" style="border:0"><p class="empty__d" style="margin:0">No data in this window.</p></div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__h"><h2>Codes that found nothing</h2></div>
+    <div class="panel__b panel__b--flush">
+      <% if (missed.length) { %>
+        <div class="tablewrap">
+          <table class="table table--slim">
+            <thead><tr><th>Code entered</th><th class="num">Times</th><th class="nowrap">Last seen</th></tr></thead>
+            <tbody>
+              <% missed.forEach(function (m) { %>
+                <tr>
+                  <td><span class="code"><%= m.query %></span></td>
+                  <td class="num"><%= m.n %></td>
+                  <td class="nowrap mono-meta"><%= fmt.ago(m.last_seen) %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="empty" style="border:0"><p class="empty__d" style="margin:0">Every lookup in this window found its report.</p></div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/admin-close') %>

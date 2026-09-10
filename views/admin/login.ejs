@@ -1,0 +1,37 @@
+<%- include('../partials/head') %>
+<div class="login">
+  <div class="login__card">
+    <div class="login__brand">
+      <img src="/img/superfeels-logo.svg" alt="Super Feels" width="66" height="60">
+    </div>
+    <h1 class="login__h">COA admin</h1>
+    <p class="login__d">Staff sign in</p>
+
+    <% if (error) { %>
+      <div class="notice notice--error" style="margin-bottom:20px">
+        <strong>Cannot sign in</strong><%= error %>
+      </div>
+    <% } %>
+
+    <form class="form" method="post" action="/admin/login">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="next" value="<%= nextUrl %>">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="<%= email %>" autocomplete="username" required autofocus>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn btn--solid btn--wide btn--lg" type="submit">
+        Sign in
+        <span class="btn__spinner" aria-hidden="true"></span>
+      </button>
+    </form>
+  </div>
+</div>
+<% var vf = typeof asset === 'function' ? asset : function (p) { return p; } %>
+<script src="<%= vf('/js/app.js') %>" defer></script>
+</body>
+</html>

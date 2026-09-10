@@ -1,0 +1,151 @@
+<%- include('../partials/admin-open') %>
+
+<%
+  var chartMax = Math.max(1, ...chart.map(function (d) { return d.total; }));
+%>
+
+<div class="stats">
+  <div class="stat">
+    <p class="stat__n"><%= fmt.count(summary.lookups_today) %></p>
+    <p class="stat__l">Lookups today</p>
+  </div>
+  <div class="stat">
+    <p class="stat__n"><%= fmt.count(summary.lookups_30d) %></p>
+    <p class="stat__l">Lookups · 30 days</p>
+  </div>
+  <div class="stat <%= summary.missed_30d > 0 ? 'stat--warn' : '' %>">
+    <p class="stat__n"><%= fmt.count(summary.missed_30d) %></p>
+    <p class="stat__l">Not found · 30 days</p>
+    <p class="stat__s"><%= fmt.percent(summary.missed_30d, summary.lookups_30d) %> of lookups</p>
+  </div>
+  <div class="stat">
+    <p class="stat__n"><%= fmt.count(summary.downloads_30d) %></p>
+    <p class="stat__l">PDF downloads · 30 days</p>
+  </div>
+  <div class="stat stat--ok">
+    <p class="stat__n"><%= fmt.count(summary.batches_live) %></p>
+    <p class="stat__l">Batches live</p>
+    <p class="stat__s"><%= fmt.count(summary.batches) %> total</p>
+  </div>
+  <% if (isFullAdmin) { %>
+    <div class="stat <%= summary.enquiries_new > 0 ? 'stat--warn' : '' %>">
+      <p class="stat__n"><a href="/admin/enquiries?status=new" style="color:inherit"><%= fmt.count(summary.enquiries_new) %></a></p>
+      <p class="stat__l">New enquiries</p>
+    </div>
+  <% } %>
+</div>
+
+<div class="panel">
+  <div class="panel__h">
+    <h2>Lookups, last 30 days</h2>
+    <a class="tlink" href="/admin/analytics">Full analytics</a>
+  </div>
+  <div class="panel__b">
+    <% if (summary.lookups_30d > 0) { %>
+      <div class="bars" role="img" aria-label="Daily lookups for the last 30 days">
+        <% chart.forEach(function (d) { %>
+          <div class="bars__col" title="<%= d.day %>: <%= d.total %> lookups, <%= d.missed %> not found">
+            <div class="bars__stack" style="height:100%">
+              <div class="bars__missed" style="height:<%= Math.round((d.missed / chartMax) * 100) %>%"></div>
+              <div class="bars__found" style="height:<%= Math.round((d.found / chartMax) * 100) %>%"></div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+      <div class="legend">
+        <span class="legend__i"><span class="legend__k" style="background:var(--o)"></span> Found</span>
+        <span class="legend__i"><span class="legend__k" style="background:var(--fail)"></span> Not found</span>
+      </div>
+    <% } else { %>
+      <div class="empty">
+        <p class="empty__h">No lookups yet</p>
+        <p class="empty__d">Once batches are published and people start scanning, their lookups appear here.</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="cols cols--2">
+  <div class="panel">
+    <div class="panel__h"><h2>Needs attention</h2></div>
+    <div class="panel__b panel__b--flush">
+      <% if (needsAttention.length) { %>
+        <div class="tablewrap">
+          <table class="table table--slim">
+            <tbody>
+              <% needsAttention.forEach(function (b) { %>
+                <tr>
+                  <td>
+                    <a href="/admin/batches/<%= b.id %>"><span class="code"><%= b.batch_code %></span></a>
+                    <div class="mono-meta" style="margin-top:3px"><%= b.product_name %></div>
+                  </td>
+                  <td class="nowrap" style="text-align:right">
+                    <% if (!b.is_published) { %>
+                      <span class="pill pill--off">Draft</span>
+                    <% } else if (b.files === 0) { %>
+                      <span class="pill pill--warn">No PDF</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="empty" style="border:0"><p class="empty__d" style="margin:0">Nothing waiting. Every published batch has a report.</p></div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__h"><h2>Most looked-up · 30 days</h2></div>
+    <div class="panel__b panel__b--flush">
+      <% if (topBatches.length) { %>
+        <div class="tablewrap">
+          <table class="table table--slim">
+            <tbody>
+              <% topBatches.forEach(function (b) { %>
+                <tr>
+                  <td>
+                    <a href="/coa/<%= encodeURIComponent(b.batch_code) %>" target="_blank" rel="noopener"><span class="code"><%= b.batch_code %></span></a>
+                    <div class="mono-meta" style="margin-top:3px"><%= b.product_name %></div>
+                  </td>
+                  <td class="num"><%= fmt.count(b.n) %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="empty" style="border:0"><p class="empty__d" style="margin:0">No lookups in the last 30 days yet.</p></div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<% if (missed.length) { %>
+  <div class="panel">
+    <div class="panel__h">
+      <h2>Codes that found nothing · 30 days</h2>
+      <a class="tlink" href="/admin/analytics">See all</a>
+    </div>
+    <div class="panel__b panel__b--flush">
+      <div class="tablewrap">
+        <table class="table table--slim">
+          <thead><tr><th>Code entered</th><th class="num">Times</th><th class="nowrap">Last seen</th></tr></thead>
+          <tbody>
+            <% missed.forEach(function (m) { %>
+              <tr>
+                <td><span class="code"><%= m.query %></span></td>
+                <td class="num"><%= m.n %></td>
+                <td class="nowrap mono-meta"><%= fmt.ago(m.last_seen) %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+<%- include('../partials/admin-close') %>

@@ -1,0 +1,94 @@
+<%- include('../partials/admin-open') %>
+
+<%
+  function err(f) { return errors[f] ? 'is-invalid' : ''; }
+  function val(f) { return values[f] !== undefined && values[f] !== null ? values[f] : ''; }
+%>
+
+<div class="panel">
+  <div class="panel__b">
+    <form class="form" method="post" action="<%= isNew ? '/admin/labs/new' : '/admin/labs/' + lab.id %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="formgrid formgrid--2">
+        <div class="field <%= err('name') %>">
+          <label for="name">Lab name *</label>
+          <input type="text" id="name" name="name" value="<%= val('name') %>" required>
+          <p class="field__error"><%= errors.name || '' %></p>
+        </div>
+        <div class="field <%= err('slug') %>">
+          <label for="slug">Slug</label>
+          <input type="text" id="slug" name="slug" value="<%= val('slug') %>" data-slug-from="name">
+          <p class="field__error"><%= errors.slug || '' %></p>
+        </div>
+      </div>
+
+      <div class="formgrid formgrid--2">
+        <div class="field">
+          <label for="license_no">Licence number</label>
+          <input type="text" id="license_no" name="license_no" value="<%= val('license_no') %>">
+        </div>
+        <div class="field">
+          <label for="accreditation">Accreditation</label>
+          <input type="text" id="accreditation" name="accreditation" value="<%= val('accreditation') %>" placeholder="e.g. ISO/IEC 17025:2017">
+        </div>
+      </div>
+
+      <div class="formgrid formgrid--2">
+        <div class="field">
+          <label for="website">Website</label>
+          <input type="text" id="website" name="website" value="<%= val('website') %>" placeholder="https://…">
+        </div>
+        <div class="field <%= err('contact_email') %>">
+          <label for="contact_email">Contact email</label>
+          <input type="email" id="contact_email" name="contact_email" value="<%= val('contact_email') %>">
+          <p class="field__error"><%= errors.contact_email || '' %></p>
+        </div>
+      </div>
+
+      <div class="formgrid formgrid--2">
+        <div class="field">
+          <label for="phone">Phone</label>
+          <input type="text" id="phone" name="phone" value="<%= val('phone') %>">
+        </div>
+        <div class="field">
+          <label for="address">Address</label>
+          <input type="text" id="address" name="address" value="<%= val('address') %>">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="notes">Internal notes</label>
+        <textarea id="notes" name="notes" style="min-height:70px"><%= val('notes') %></textarea>
+      </div>
+
+      <div class="fieldset">
+        <div class="field--check">
+          <input type="checkbox" id="is_active" name="is_active" value="1" <%= val('is_active') ? 'checked' : '' %>>
+          <label for="is_active"><strong>Active</strong> — offered in the dropdown when creating a batch. Inactive labs keep their attribution on existing reports.</label>
+        </div>
+      </div>
+
+      <div class="formfoot">
+        <button class="btn btn--solid" type="submit">Save lab</button>
+        <div class="formfoot__spacer"></div>
+        <a class="btn btn--mute" href="/admin/labs">Back</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<% if (!isNew) { %>
+  <div class="panel">
+    <div class="panel__h"><h2>Delete lab</h2></div>
+    <div class="panel__b">
+      <form method="post" action="/admin/labs/<%= lab.id %>/delete" data-confirm="Delete <%= lab.name %>?">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn--danger" type="submit">Delete this lab</button>
+        <span class="muted" style="font-size:var(--fs-xs);margin-left:12px">Only possible once no batches reference it. Otherwise deactivate.</span>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<%- include('../partials/admin-close') %>

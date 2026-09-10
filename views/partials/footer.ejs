@@ -1,0 +1,22 @@
+<footer class="ft">
+  <div class="ft__in">
+    <div>
+      <%# Light variant: the lockup's near-black artwork would vanish on ink. %>
+      <a class="ft__logo" href="/">
+        <img src="/img/superfeels-logo-light.svg" alt="Super Feels" width="62" height="56">
+      </a>
+      <p class="ft__tag">Every Super Feels batch is tested by an independent, accredited laboratory. The reports here are the laboratory's own, published unaltered.</p>
+    </div>
+    <nav class="ft__links" aria-label="Footer">
+      <a href="/">Batch lookup</a>
+      <% (typeof navPages !== 'undefined' ? navPages : []).forEach(function (p) { %>
+        <a href="/<%= p.slug %>"><%= p.title %></a>
+      <% }) %>
+      <a href="/contact">Contact</a>
+    </nav>
+  </div>
+  <div class="ft__legal">
+    &copy; <%= new Date().getFullYear() %> Super Feels &nbsp;&bull;&nbsp;
+    Laboratory results are specific to the batch they name. Nothing on this site is medical advice.
+  </div>
+</footer>

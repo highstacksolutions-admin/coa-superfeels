@@ -1,0 +1,72 @@
+<%- include('../partials/admin-open') %>
+
+<%
+  var setMap = {};
+  settings.forEach(function (s) { setMap[s.name] = s.value; });
+%>
+
+<div class="cols cols--2">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+      <p class="mono-meta">Content pages</p>
+      <a class="btn btn--solid btn--sm" href="/admin/content/new">Add page</a>
+    </div>
+    <div class="panel">
+      <div class="panel__b panel__b--flush">
+        <% if (pages.length) { %>
+          <div class="tablewrap">
+            <table class="table table--slim">
+              <thead><tr><th>Title</th><th>URL</th><th>In nav</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                <% pages.forEach(function (p) { %>
+                  <tr>
+                    <td><a href="/admin/content/page/<%= p.id %>"><strong><%= p.title %></strong></a></td>
+                    <td class="mono-meta">/<%= p.slug %></td>
+                    <td><% if (p.show_in_nav) { %><span class="pill pill--on">Yes</span><% } else { %><span class="pill pill--off">No</span><% } %></td>
+                    <td><% if (p.is_published) { %><span class="pill pill--on">Live</span><% } else { %><span class="pill pill--off">Draft</span><% } %></td>
+                    <td class="table__actions">
+                      <% if (p.is_published) { %><a class="btn btn--mute btn--sm" href="/<%= p.slug %>" target="_blank" rel="noopener">View</a><% } %>
+                      <a class="btn btn--ghost btn--sm" href="/admin/content/page/<%= p.id %>">Edit</a>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="empty"><p class="empty__d" style="margin:0">No pages yet.</p></div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="mono-meta" style="margin-bottom:16px">Public copy</p>
+    <div class="panel">
+      <div class="panel__b">
+        <form class="form" method="post" action="/admin/content/settings">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="field">
+            <label for="site_tagline">Home tagline</label>
+            <textarea id="site_tagline" name="site_tagline" style="min-height:70px"><%= setMap.site_tagline || '' %></textarea>
+            <p class="field__hint">Under the headline on the home page.</p>
+          </div>
+          <div class="field">
+            <label for="lookup_help">Lookup helper text</label>
+            <textarea id="lookup_help" name="lookup_help" style="min-height:60px"><%= setMap.lookup_help || '' %></textarea>
+            <p class="field__hint">Beneath the batch code box.</p>
+          </div>
+          <div class="field">
+            <label for="contact_intro">Contact intro</label>
+            <textarea id="contact_intro" name="contact_intro" style="min-height:60px"><%= setMap.contact_intro || '' %></textarea>
+          </div>
+          <div class="formfoot">
+            <button class="btn btn--solid" type="submit">Save copy</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/admin-close') %>

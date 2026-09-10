@@ -1,0 +1,55 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<main id="main">
+  <section class="section">
+    <div class="wrap wrap--narrow">
+      <p class="eyebrow">Contact</p>
+      <h1 class="page-h" style="margin-top:16px">Tell us what you are looking at.</h1>
+      <p class="dek" style="margin-top:20px"><%= settings.contact_intro || 'Cannot find a batch, or something on a report does not look right? Send us the code and we will look into it.' %></p>
+
+      <form class="form" action="/contact" method="post" style="margin-top:40px;max-width:640px">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <div class="form__row form__row--2">
+          <div class="field <%= errors.name ? 'is-invalid' : '' %>">
+            <label for="name">Your name</label>
+            <input type="text" id="name" name="name" value="<%= values.name || '' %>" maxlength="120" required>
+            <p class="field__error"><%= errors.name || '' %></p>
+          </div>
+          <div class="field <%= errors.email ? 'is-invalid' : '' %>">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="<%= values.email || '' %>" maxlength="190" required>
+            <p class="field__error"><%= errors.email || '' %></p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="batch_code">Batch code <span style="text-transform:none;letter-spacing:0">(if you have one)</span></label>
+          <input type="text" id="batch_code" name="batch_code" value="<%= values.batch_code || '' %>"
+                 maxlength="80" autocomplete="off" spellcheck="false" placeholder="SF-2409-A12">
+          <p class="field__hint">Copy it exactly as it appears on the product, even if it did not work in the lookup — that is the most useful thing you can give us.</p>
+        </div>
+
+        <div class="field">
+          <label for="subject">Subject</label>
+          <input type="text" id="subject" name="subject" value="<%= values.subject || '' %>" maxlength="160">
+        </div>
+
+        <div class="field <%= errors.message ? 'is-invalid' : '' %>">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" maxlength="4000" required><%= values.message || '' %></textarea>
+          <p class="field__error"><%= errors.message || '' %></p>
+        </div>
+
+        <button class="btn btn--solid btn--lg" type="submit">
+          Send it
+          <span class="btn__spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>
+<%- include('../partials/foot') %>

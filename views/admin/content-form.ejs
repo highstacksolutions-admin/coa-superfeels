@@ -1,0 +1,78 @@
+<%- include('../partials/admin-open') %>
+
+<%
+  function err(f) { return errors[f] ? 'is-invalid' : ''; }
+  function val(f) { return values[f] !== undefined && values[f] !== null ? values[f] : ''; }
+%>
+
+<div class="panel">
+  <div class="panel__b">
+    <form class="form form--wide" method="post" action="<%= isNew ? '/admin/content/new' : '/admin/content/page/' + page.id %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="formgrid formgrid--2">
+        <div class="field <%= err('title') %>">
+          <label for="title">Title *</label>
+          <input type="text" id="title" name="title" value="<%= val('title') %>" required>
+          <p class="field__error"><%= errors.title || '' %></p>
+        </div>
+        <div class="field <%= err('slug') %>">
+          <label for="slug">Slug</label>
+          <input type="text" id="slug" name="slug" value="<%= val('slug') %>" data-slug-from="title">
+          <p class="field__error"><%= errors.slug || '' %></p>
+          <p class="field__hint">The page lives at /<%= val('slug') || 'your-slug' %></p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="meta_description">Meta description</label>
+        <input type="text" id="meta_description" name="meta_description" value="<%= val('meta_description') %>" maxlength="255">
+        <p class="field__hint">Shown in search results. Optional.</p>
+      </div>
+
+      <div class="field <%= err('body') %>">
+        <label for="body">Body (HTML)</label>
+        <textarea id="body" name="body" style="min-height:320px;font-family:var(--mono);font-size:13px"><%= val('body') %></textarea>
+        <p class="field__error"><%= errors.body || '' %></p>
+        <p class="field__hint">Use &lt;h2&gt;, &lt;h3&gt;, &lt;p&gt;, &lt;ul&gt;&lt;li&gt;, &lt;strong&gt;, &lt;a&gt;. Rendered as written.</p>
+      </div>
+
+      <div class="fieldset">
+        <div class="formgrid formgrid--2">
+          <div class="field--check">
+            <input type="checkbox" id="is_published" name="is_published" value="1" <%= val('is_published') ? 'checked' : '' %>>
+            <label for="is_published"><strong>Published</strong> — live on the site.</label>
+          </div>
+          <div class="field--check">
+            <input type="checkbox" id="show_in_nav" name="show_in_nav" value="1" <%= val('show_in_nav') ? 'checked' : '' %>>
+            <label for="show_in_nav"><strong>Show in navigation</strong> — header and footer.</label>
+          </div>
+        </div>
+        <div class="field" style="margin-top:16px;max-width:200px">
+          <label for="sort_order">Nav order</label>
+          <input type="number" id="sort_order" name="sort_order" value="<%= val('sort_order') || 0 %>">
+        </div>
+      </div>
+
+      <div class="formfoot">
+        <button class="btn btn--solid" type="submit">Save page</button>
+        <div class="formfoot__spacer"></div>
+        <a class="btn btn--mute" href="/admin/content">Back</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<% if (!isNew) { %>
+  <div class="panel">
+    <div class="panel__h"><h2>Delete page</h2></div>
+    <div class="panel__b">
+      <form method="post" action="/admin/content/page/<%= page.id %>/delete" data-confirm="Delete the page &quot;<%= page.title %>&quot;?">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn--danger" type="submit">Delete this page</button>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<%- include('../partials/admin-close') %>

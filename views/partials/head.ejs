@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %></title>
+<meta name="description" content="<%= typeof description !== 'undefined' && description ? description : 'Look up the independent laboratory report for any Super Feels batch.' %>">
+<%# Individual batch reports set this to noindex — see routes/lookup.js. The
+    lookup page and the guidance pages are meant to be findable. %>
+<meta name="robots" content="<%= typeof robots !== 'undefined' && robots ? robots : 'index, follow' %>">
+<meta name="theme-color" content="#F0701C">
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<%# Fingerprinted so a deploy actually reaches browsers that already hold the
+    old file — ./public is served with a 30-day max-age in production. The
+    guard is for an error page rendered before the view globals are attached. %>
+<% var v = typeof asset === 'function' ? asset : function (p) { return p; } %>
+<link rel="stylesheet" href="<%= v('/css/tokens.css') %>">
+<link rel="stylesheet" href="<%= v('/css/app.css') %>">
+<% if (typeof adminCss !== 'undefined' && adminCss) { %><link rel="stylesheet" href="<%= v('/css/admin.css') %>"><% } %>
+<%- typeof analyticsHtml !== 'undefined' ? analyticsHtml : '' %>
+</head>
+<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : '' %>">
+<a class="skip" href="#main">Skip to content</a>

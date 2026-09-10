@@ -1,0 +1,25 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<main id="main">
+  <section class="section">
+    <div class="wrap wrap--narrow">
+      <p class="eyebrow">Super Feels</p>
+      <h1 class="page-h" style="margin-top:16px"><%= page.title %></h1>
+
+      <div class="prose" style="margin-top:40px">
+        <%# Authored by staff in the admin, so it is rendered as markup rather
+            than escaped. The editor is behind the admin session and the role
+            gate; there is no path by which a visitor can write here. %>
+        <%- page.body %>
+      </div>
+
+      <p class="mono-meta" style="margin-top:56px;padding-top:20px;border-top:1px solid var(--hair)">
+        Last updated <%= fmt.date(page.updated_at) %>
+      </p>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>
+<%- include('../partials/foot') %>

@@ -1,0 +1,51 @@
+<%- include('../partials/admin-open') %>
+
+<form class="filters" method="get" action="/admin/products">
+  <div class="field">
+    <label for="q">Search</label>
+    <input type="text" id="q" name="q" value="<%= q %>" placeholder="Name, SKU or category">
+  </div>
+  <div class="filters__go">
+    <button class="btn btn--solid btn--sm" type="submit">Filter</button>
+    <a class="btn btn--mute btn--sm" href="/admin/products">Clear</a>
+  </div>
+</form>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+  <p class="mono-meta"><%= fmt.count(products.length) %> product<%= products.length === 1 ? '' : 's' %></p>
+  <a class="btn btn--solid btn--sm" href="/admin/products/new">Add product</a>
+</div>
+
+<div class="panel">
+  <div class="panel__b panel__b--flush">
+    <% if (products.length) { %>
+      <div class="tablewrap">
+        <table class="table">
+          <thead><tr><th></th><th>Name</th><th>Category</th><th>Size</th><th class="num">Batches</th><th class="num">Live</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <% products.forEach(function (p) { %>
+              <tr>
+                <td><% if (p.image_path) { %><img class="table__thumb" src="<%= p.image_path %>" alt=""><% } %></td>
+                <td><a href="/admin/products/<%= p.id %>"><strong><%= p.name %></strong></a><% if (p.sku) { %><div class="mono-meta" style="margin-top:3px"><%= p.sku %></div><% } %></td>
+                <td><%= p.category || '—' %></td>
+                <td><%= p.size_label || '—' %></td>
+                <td class="num"><%= p.batch_count %></td>
+                <td class="num"><%= p.live_count %></td>
+                <td><% if (p.is_published) { %><span class="pill pill--on">Published</span><% } else { %><span class="pill pill--off">Hidden</span><% } %></td>
+                <td class="table__actions"><a class="btn btn--ghost btn--sm" href="/admin/products/<%= p.id %>">Edit</a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="empty">
+        <p class="empty__h">No products<%= q ? ' match that search' : ' yet' %></p>
+        <p class="empty__d">A product is the item on the shelf. Batches — the individual tested production runs — hang off it.</p>
+        <div class="empty__a"><a class="btn btn--solid btn--sm" href="/admin/products/new">Add product</a></div>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/admin-close') %>

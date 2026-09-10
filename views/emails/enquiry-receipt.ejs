@@ -1,0 +1,28 @@
+<% var subject = 'We have your message — Super Feels' %>
+<%- include('./partials/head', { subject: subject }) %>
+
+<h1 style="margin:0 0 16px;font-family:Helvetica,Arial,sans-serif;font-size:22px;line-height:1.2;color:#21252B;">
+  Thank you — we have it.
+</h1>
+
+<p style="margin:0 0 16px;">
+  Hello <%= enquiry.name %>. Your message reached us and a person will read it. If you asked
+  about a specific batch, we will check the code against our records and tell you exactly what
+  we find.
+</p>
+
+<% if (enquiry.batch_code) { %>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:#F5EFE4;border-left:3px solid #F0701C;">
+    <tr><td style="padding:14px 16px;">
+      <p style="margin:0 0 4px;font-family:'JetBrains Mono',Menlo,monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#6B7280;">The code you sent us</p>
+      <p style="margin:0;font-family:'JetBrains Mono',Menlo,monospace;font-size:17px;font-weight:700;letter-spacing:.08em;color:#21252B;"><%= enquiry.batch_code %></p>
+    </td></tr>
+  </table>
+<% } %>
+
+<p style="margin:0 0 16px;font-size:14px;color:#6B7280;">
+  Your message, so you have a copy:
+</p>
+<p style="margin:0 0 20px;padding:14px 16px;background:#F5EFE4;font-size:14px;white-space:pre-wrap;color:#3A4048;"><%= enquiry.message %></p>
+
+<%- include('./partials/foot') %>

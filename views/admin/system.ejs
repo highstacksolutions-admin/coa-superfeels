@@ -1,0 +1,104 @@
+<%- include('../partials/admin-open') %>
+
+<div class="cols cols--2">
+  <div class="panel">
+    <div class="panel__h"><h2>Storage</h2></div>
+    <div class="panel__b">
+      <div class="kv">
+        <div class="kv__r"><span class="kv__k">Reports held</span><span class="kv__v"><%= fmt.count(totals.files) %> files · <%= fmt.bytes(storage.bytes) %></span></div>
+        <div class="kv__r"><span class="kv__k">Writable</span><span class="kv__v">
+          <% if (storage.writable) { %><span class="pill pill--on">Yes</span>
+          <% } else { %><span class="pill pill--bad">No</span> <span style="color:var(--fail)"><%= storage.error %></span><% } %>
+        </span></div>
+        <div class="kv__r"><span class="kv__k">Path</span><span class="kv__v"><code><%= storage.path %></code></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__h"><h2>Runtime</h2></div>
+    <div class="panel__b">
+      <div class="kv">
+        <div class="kv__r"><span class="kv__k">Environment</span><span class="kv__v"><%= env.nodeEnv %></span></div>
+        <div class="kv__r"><span class="kv__k">App URL</span><span class="kv__v"><code><%= env.appUrl %></code></span></div>
+        <div class="kv__r"><span class="kv__k">Node</span><span class="kv__v"><%= env.node %></span></div>
+        <div class="kv__r"><span class="kv__k">Uptime</span><span class="kv__v"><%= Math.floor(env.uptime / 3600) %>h <%= Math.floor((env.uptime % 3600) / 60) %>m</span></div>
+        <div class="kv__r"><span class="kv__k">Analytics tag</span><span class="kv__v"><%= env.analytics ? 'configured' : 'none' %></span></div>
+        <div class="kv__r"><span class="kv__k">Batches / lookups / enquiries</span><span class="kv__v"><%= fmt.count(totals.batches) %> · <%= fmt.count(totals.lookups) %> · <%= fmt.count(totals.enquiries) %></span></div>
+      </div>
+      <% if (env.warnings && env.warnings.length) { %>
+        <div class="notice notice--error" style="margin-top:16px">
+          <strong>Boot warnings</strong>
+          <% env.warnings.forEach(function (w) { %><div style="margin-top:4px"><%= w %></div><% }) %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="mail">
+  <div class="panel__h">
+    <h2>Email</h2>
+    <% if (mail.configured) { %>
+      <% if (mail.lastVerify && mail.lastVerify.ok) { %><span class="pill pill--on">Connected</span>
+      <% } else if (mail.lastVerify && mail.lastVerify.ok === false) { %><span class="pill pill--bad">Failing</span>
+      <% } else { %><span class="pill pill--warn">Configured</span><% } %>
+    <% } else { %><span class="pill pill--off">Not configured</span><% } %>
+  </div>
+  <div class="panel__b">
+    <% if (!mail.configured) { %>
+      <p class="muted" style="font-size:var(--fs-sm);margin-bottom:16px">No SMTP is set, so contact-form notifications are not emailed. Enquiries are still captured and readable under <a href="/admin/enquiries" style="color:var(--o-deep)">Enquiries</a>. Set SMTP_* in the environment to enable delivery.</p>
+    <% } else { %>
+      <div class="kv" style="margin-bottom:16px">
+        <div class="kv__r"><span class="kv__k">Host</span><span class="kv__v"><code><%= mail.host %>:<%= mail.port %></code> <%= mail.secure ? '(TLS)' : '(STARTTLS)' %></span></div>
+        <div class="kv__r"><span class="kv__k">From</span><span class="kv__v"><%= mail.from %></span></div>
+        <div class="kv__r"><span class="kv__k">Enquiries go to</span><span class="kv__v"><%= mail.recipient %></span></div>
+        <% if (mail.lastVerify && mail.lastVerify.error) { %>
+          <div class="kv__r"><span class="kv__k">Last error</span><span class="kv__v" style="color:var(--fail)"><%= mail.lastVerify.error %></span></div>
+        <% } %>
+      </div>
+    <% } %>
+
+    <form method="post" action="/admin/system/mail-test" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field" style="flex:1 1 240px;margin:0">
+        <label for="to">Send a test message to</label>
+        <input type="email" id="to" name="to" placeholder="you@example.com" required>
+      </div>
+      <button class="btn btn--solid" type="submit">Send test</button>
+    </form>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel__h"><h2>Recent mail activity</h2></div>
+  <div class="panel__b panel__b--flush">
+    <% if (mailHistory.length) { %>
+      <div class="tablewrap">
+        <table class="table">
+          <thead><tr><th>When</th><th>Status</th><th>To</th><th>Subject</th><th>Detail</th></tr></thead>
+          <tbody>
+            <% mailHistory.forEach(function (h) { %>
+              <tr>
+                <td class="nowrap mono-meta"><%= fmt.ago(h.t) %></td>
+                <td>
+                  <% if (h.status === 'sent') { %><span class="pill pill--on">Sent</span>
+                  <% } else if (h.status === 'failed') { %><span class="pill pill--bad">Failed</span>
+                  <% } else if (h.status === 'not-configured') { %><span class="pill pill--off">No SMTP</span>
+                  <% } else { %><span class="pill"><%= h.status %></span><% } %>
+                </td>
+                <td class="mono-meta"><%= h.to || '—' %></td>
+                <td><%= h.subject || '—' %></td>
+                <td class="mono-meta" style="max-width:280px"><%= h.detail || h.response || '' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="empty"><p class="empty__d" style="margin:0">No mail activity since the last restart. This log is in memory and resets on restart.</p></div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/admin-close') %>

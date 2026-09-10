@@ -1,0 +1,53 @@
+<%- include('../partials/admin-open') %>
+
+<form class="filters" method="get" action="/admin/activity">
+  <div class="field">
+    <label for="q">Search</label>
+    <input type="text" id="q" name="q" value="<%= q %>" placeholder="Action, detail or person">
+  </div>
+  <div class="field">
+    <label for="entity">Type</label>
+    <select id="entity" name="entity">
+      <option value="">All types</option>
+      <% entities.forEach(function (e) { %>
+        <option value="<%= e.entity %>" <%= entity === e.entity ? 'selected' : '' %>><%= e.entity %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="filters__go">
+    <button class="btn btn--solid btn--sm" type="submit">Filter</button>
+    <a class="btn btn--mute btn--sm" href="/admin/activity">Clear</a>
+  </div>
+</form>
+
+<div class="panel">
+  <div class="panel__b panel__b--flush">
+    <% if (rows.length) { %>
+      <div class="tablewrap">
+        <table class="table">
+          <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Detail</th><th>IP</th></tr></thead>
+          <tbody>
+            <% rows.forEach(function (r) { %>
+              <tr>
+                <td class="nowrap mono-meta" title="<%= fmt.dateTime(r.created_at) %>"><%= fmt.ago(r.created_at) %></td>
+                <td><%= r.admin_name || '—' %></td>
+                <td><span class="code"><%= r.action %></span></td>
+                <td><%= r.detail || '—' %></td>
+                <td class="mono-meta"><%= r.ip_address || '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="empty">
+        <p class="empty__h">Nothing logged<%= q || entity ? ' for that filter' : ' yet' %></p>
+        <p class="empty__d">Every publish, edit and deletion of a batch, product, lab, page or account is recorded here — the audit trail behind the reports.</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/pager', { page: page, pages: pages, base: '/admin/activity', query: { q: q, entity: entity } }) %>
+
+<%- include('../partials/admin-close') %>

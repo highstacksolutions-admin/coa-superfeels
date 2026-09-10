@@ -1,0 +1,70 @@
+<%- include('../partials/admin-open') %>
+
+<div class="cols cols--2">
+  <div>
+    <div class="panel">
+      <div class="panel__h">
+        <h2>Message</h2>
+        <% if (enquiry.status === 'new') { %><span class="pill pill--warn">New</span>
+        <% } else if (enquiry.status === 'resolved') { %><span class="pill pill--on">Resolved</span>
+        <% } else { %><span class="pill">Read</span><% } %>
+      </div>
+      <div class="panel__b">
+        <p style="white-space:pre-wrap;line-height:1.6"><%= enquiry.message %></p>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <div class="panel__h"><h2>Details</h2></div>
+      <div class="panel__b">
+        <div class="kv">
+          <div class="kv__r"><span class="kv__k">From</span><span class="kv__v"><%= enquiry.name %></span></div>
+          <div class="kv__r"><span class="kv__k">Email</span><span class="kv__v"><a href="mailto:<%= enquiry.email %>" style="color:var(--o-deep)"><%= enquiry.email %></a></span></div>
+          <% if (enquiry.subject) { %><div class="kv__r"><span class="kv__k">Subject</span><span class="kv__v"><%= enquiry.subject %></span></div><% } %>
+          <div class="kv__r"><span class="kv__k">Batch code</span><span class="kv__v">
+            <% if (enquiry.batch_code) { %>
+              <span class="code"><%= enquiry.batch_code %></span>
+              <% if (matchedBatch) { %>
+                — <a href="/admin/batches/<%= matchedBatch.id %>" style="color:var(--o-deep)">matches a batch</a>
+                <% if (!matchedBatch.is_published) { %><span class="pill pill--off" style="margin-left:6px">draft</span><% } else { %><span class="pill pill--on" style="margin-left:6px">live</span><% } %>
+              <% } else { %>
+                — <span style="color:var(--fail)">no batch matches this code</span>
+              <% } %>
+            <% } else { %>—<% } %>
+          </span></div>
+          <div class="kv__r"><span class="kv__k">Received</span><span class="kv__v"><%= fmt.dateTime(enquiry.created_at) %></span></div>
+          <% if (enquiry.ip_address) { %><div class="kv__r"><span class="kv__k">IP</span><span class="kv__v"><code><%= enquiry.ip_address %></code></span></div><% } %>
+        </div>
+
+        <div style="margin-top:24px;display:flex;gap:8px;flex-wrap:wrap">
+          <a class="btn btn--solid btn--sm" href="mailto:<%= enquiry.email %>?subject=<%= encodeURIComponent('Re: ' + (enquiry.subject || 'your enquiry')) %>">Reply by email</a>
+        </div>
+
+        <form method="post" action="/admin/enquiries/<%= enquiry.id %>/status" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <% if (enquiry.status !== 'resolved') { %>
+            <button class="btn btn--ghost btn--sm" type="submit" name="status" value="resolved">Mark resolved</button>
+          <% } else { %>
+            <button class="btn btn--mute btn--sm" type="submit" name="status" value="read">Reopen</button>
+          <% } %>
+        </form>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__h"><h2>Delete</h2></div>
+      <div class="panel__b">
+        <form method="post" action="/admin/enquiries/<%= enquiry.id %>/delete" data-confirm="Delete this enquiry?">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn--danger btn--sm" type="submit">Delete enquiry</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:8px"><a class="tlink" href="/admin/enquiries">← All enquiries</a></p>
+
+<%- include('../partials/admin-close') %>

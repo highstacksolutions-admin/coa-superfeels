@@ -1,0 +1,323 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<%
+  // The verdict shown here is derived from the panels rather than read straight
+  // off the batch row — see lib/coa.js#deriveStatus. The badge and the panel
+  // rows below can therefore never contradict each other.
+  var tone = coa.statusTone(verdict);
+  var potencyPanels = panels.filter(function (p) { return p.meta.kind === 'potency' && p.results.length; });
+  var safetyPanels = panels.filter(function (p) { return p.meta.kind === 'safety'; });
+%>
+
+<main id="main">
+
+  <section class="rpt__top">
+    <div class="wrap">
+      <p class="mono-meta rpt__crumb"><a href="/" style="text-decoration:none">Batch lookup</a> / Report</p>
+
+      <div class="rpt__head">
+        <div>
+          <h1 class="rpt__prod"><%= batch.product_name %></h1>
+          <p class="rpt__code">
+            <%= batch.batch_code %>
+            <span>Batch code</span>
+          </p>
+        </div>
+        <div>
+          <span class="status status--<%= tone %> status--lg"><%= coa.statusLabel(verdict) %></span>
+        </div>
+      </div>
+
+      <% if (verdict === 'fail') { %>
+        <div class="notice notice--error" style="margin-top:22px">
+          <strong>This batch did not pass</strong>
+          A batch that fails any panel is not released for sale. If you are holding this product, stop using it and <a href="/contact?batch=<%= encodeURIComponent(batch.batch_code) %>" style="color:inherit">tell us</a>.
+        </div>
+      <% } else if (verdict === 'pending') { %>
+        <div class="notice" style="margin-top:22px">
+          <strong>Testing is not finished</strong>
+          Some panels for this batch are still with the laboratory. What is shown below is complete as far as it goes; the rest will appear here as it arrives.
+        </div>
+      <% } %>
+
+      <div class="meta">
+        <div class="meta__i">
+          <p class="meta__l">Tested</p>
+          <p class="meta__v"><%= fmt.date(batch.tested_on) %></p>
+        </div>
+        <% if (batch.manufactured_on) { %>
+          <div class="meta__i">
+            <p class="meta__l">Produced</p>
+            <p class="meta__v"><%= fmt.date(batch.manufactured_on) %></p>
+          </div>
+        <% } %>
+        <% if (batch.expires_on) { %>
+          <div class="meta__i">
+            <p class="meta__l">Best before</p>
+            <p class="meta__v"><%= fmt.date(batch.expires_on) %></p>
+          </div>
+        <% } %>
+        <% if (batch.product_size) { %>
+          <div class="meta__i">
+            <p class="meta__l">Size</p>
+            <p class="meta__v"><%= batch.product_size %></p>
+          </div>
+        <% } %>
+        <% if (batch.lab_name) { %>
+          <div class="meta__i">
+            <p class="meta__l">Laboratory</p>
+            <p class="meta__v"><%= batch.lab_name %></p>
+          </div>
+        <% } %>
+        <% if (batch.lab_sample_id) { %>
+          <div class="meta__i">
+            <p class="meta__l">Lab sample</p>
+            <p class="meta__v"><%= batch.lab_sample_id %></p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--tight">
+    <div class="wrap">
+
+      <% if (batch.total_thc !== null || batch.total_cbd !== null) { %>
+        <div class="potency">
+          <% if (batch.total_thc !== null) { %>
+            <div class="potency__i">
+              <p class="potency__l">Total THC</p>
+              <p class="potency__v"><%= Number(batch.total_thc).toFixed(2) %><small><%= batch.potency_unit %></small></p>
+            </div>
+          <% } %>
+          <% if (batch.total_cbd !== null) { %>
+            <div class="potency__i">
+              <p class="potency__l">Total CBD</p>
+              <p class="potency__v"><%= Number(batch.total_cbd).toFixed(2) %><small><%= batch.potency_unit %></small></p>
+            </div>
+          <% } %>
+        </div>
+      <% } %>
+
+      <%# The lab's own document is the authoritative record, so it is shown in
+          full on the page — embedded, not hidden behind a link — with the
+          download and open-in-tab actions alongside it. %>
+      <% if (primaryFile) { %>
+        <div class="doc" style="margin-top:<%= (batch.total_thc !== null || batch.total_cbd !== null) ? '22px' : '0' %>">
+          <div class="dl">
+            <div class="dl__t">
+              <p class="dl__h">The laboratory's report</p>
+              <p class="dl__m">PDF · <%= fmt.bytes(primaryFile.file_size) %> · unaltered<%= batch.lab_name ? ' · ' + batch.lab_name : '' %></p>
+            </div>
+            <%# The hrefs are the no-JS fallback and would hit the network (and
+                so a download-manager extension). Once the viewer has the bytes,
+                report-pdf.js rewrites both to act on an in-page blob: URL, which
+                such extensions cannot intercept — so with JS on, neither button
+                ever touches IDM. %>
+            <div class="dl__a">
+              <a class="btn btn--ghost btn--sm" href="/download/<%= primaryFile.id %>?inline=1" target="_blank" rel="noopener" data-pdf-open>Open full screen</a>
+              <a class="btn btn--solid btn--sm" href="/download/<%= primaryFile.id %>" data-pdf-download>Download PDF</a>
+            </div>
+          </div>
+
+          <%# The report is drawn onto canvases by PDF.js from base64 text it
+              fetches itself, rather than embedded with the browser's PDF plugin.
+              That is what makes it render the same on every device and keeps a
+              download-manager extension (IDM and the like) from ever seeing a
+              PDF response to grab. Progressively filled by /js/report-pdf.js. %>
+          <div class="doc__view" data-pdf
+               data-src="/download/<%= primaryFile.id %>?embed=1"
+               data-code="<%= batch.batch_code %>"
+               data-worker="<%= asset('/js/vendor/pdfjs/pdf.worker.min.js') %>">
+            <div class="doc__status" data-pdf-status>
+              <span class="doc__spin" aria-hidden="true"></span>
+              Loading the report…
+            </div>
+            <div class="doc__pages" data-pdf-pages hidden></div>
+            <noscript>
+              <div class="doc__fallback">
+                <p>Turn on JavaScript to read the report here, or open the PDF directly.</p>
+                <a class="btn btn--solid btn--sm" href="/download/<%= primaryFile.id %>?inline=1" target="_blank" rel="noopener">Open the PDF</a>
+              </div>
+            </noscript>
+          </div>
+        </div>
+
+        <% if (files.length > 1) { %>
+          <p class="mono-meta" style="margin-top:18px">More documents for this batch</p>
+          <div class="sibs">
+            <% files.filter(function (f) { return f.id !== primaryFile.id; }).forEach(function (f) { %>
+              <a class="sib" href="/download/<%= f.id %>?inline=1" target="_blank" rel="noopener"><%= f.label || f.original_filename %> · <%= fmt.bytes(f.file_size) %></a>
+            <% }) %>
+          </div>
+        <% } %>
+      <% } else { %>
+        <div class="notice" style="margin-top:<%= (batch.total_thc !== null || batch.total_cbd !== null) ? '22px' : '0' %>">
+          <strong>PDF not attached yet</strong>
+          The results below are the laboratory's, entered from its report. The signed PDF will be posted here shortly — <a href="/contact?batch=<%= encodeURIComponent(batch.batch_code) %>" style="color:inherit">ask us for it</a> if you need it now.
+        </div>
+      <% } %>
+
+      <%# Potency first: it is what the label claims and what the reader is
+          checking. Full tables, because the numbers are the point. %>
+      <% potencyPanels.forEach(function (p) { %>
+        <div class="rsec">
+          <div class="rsec__h">
+            <h2 class="rsec__t"><%= p.meta.label %></h2>
+            <span class="status status--<%= coa.statusTone(p.status) %>"><%= coa.statusLabel(p.status) %></span>
+          </div>
+          <% if (p.summary) { %><p class="rsec__d"><%= p.summary %></p><% } %>
+          <% if (p.method) { %><p class="rsec__method">Method: <%= p.method %></p><% } %>
+
+          <div class="tablewrap">
+            <table class="rtable">
+              <thead>
+                <tr>
+                  <th scope="col"><%= p.panel === 'terpenes' ? 'Terpene' : 'Cannabinoid' %></th>
+                  <th scope="col" class="num">Result</th>
+                  <th scope="col" class="num">LOD</th>
+                  <th scope="col" class="num">LOQ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% p.results.forEach(function (r) { %>
+                  <tr>
+                    <td class="analyte"><%= r.analyte %></td>
+                    <td class="num num--big <%= r.status === 'nd' ? 'nd' : '' %>">
+                      <%= r.value_text %><%= r.unit ? ' ' + r.unit : '' %>
+                    </td>
+                    <td class="lim"><%= r.lod || '—' %></td>
+                    <td class="lim"><%= r.loq || '—' %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% }) %>
+
+      <%# Safety panels collapse to their verdict. That is not a way of hiding
+          them — it is that "did it pass" is the only question most readers
+          have, and twenty analyte rows between them and the answer buries it.
+          <details> keeps every row one tap away and needs no JavaScript. %>
+      <% if (safetyPanels.length) { %>
+        <div class="rsec">
+          <div class="rsec__h">
+            <h2 class="rsec__t">Safety panels</h2>
+          </div>
+          <p class="rsec__d">Each panel passes only if every analyte in it came in under its action limit. Open a panel to see the analytes behind its verdict.</p>
+
+          <div style="margin-top:22px">
+            <% safetyPanels.forEach(function (p) { %>
+              <%# A failing panel opens itself. Collapsing the one panel that
+                  explains why the batch failed would be the single worst
+                  default on this page. %>
+              <details class="pnl" <%= p.status === 'fail' ? 'open' : '' %>>
+                <summary>
+                  <span class="pnl__l">
+                    <span class="pnl__n"><%= p.meta.label %></span>
+                    <span class="pnl__s"><%= p.summary || p.meta.blurb %></span>
+                  </span>
+                  <span class="pnl__r">
+                    <span class="status status--<%= coa.statusTone(p.status) %>"><%= coa.statusLabel(p.status) %></span>
+                    <span class="pnl__more" aria-hidden="true"></span>
+                  </span>
+                </summary>
+                <div class="pnl__b">
+                  <% if (p.results.length) { %>
+                    <div class="tablewrap">
+                      <table class="rtable">
+                        <thead>
+                          <tr>
+                            <th scope="col">Analyte</th>
+                            <th scope="col" class="num">Result</th>
+                            <th scope="col" class="lim">Limit</th>
+                            <th scope="col" class="st">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% p.results.forEach(function (r) { %>
+                            <tr>
+                              <td class="analyte"><%= r.analyte %></td>
+                              <td class="num <%= r.status === 'nd' ? 'nd' : '' %>"><%= r.value_text %><%= r.unit ? ' ' + r.unit : '' %></td>
+                              <td class="lim"><%= r.limit_text || '—' %></td>
+                              <td class="st"><span class="status status--<%= coa.statusTone(r.status) %>"><%= coa.statusLabel(r.status) %></span></td>
+                            </tr>
+                          <% }) %>
+                        </tbody>
+                      </table>
+                    </div>
+                    <% if (p.method) { %><p class="rsec__method">Method: <%= p.method %></p><% } %>
+                  <% } else if (p.status === 'not_tested') { %>
+                    <p class="pnl__empty">This panel was not part of the test package for this batch.</p>
+                  <% } else { %>
+                    <p class="pnl__empty">The laboratory reported an overall <%= coa.statusLabel(p.status).toLowerCase() %> for this panel without itemising the analytes. The full detail is in the PDF.</p>
+                  <% } %>
+                </div>
+              </details>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+
+      <% if (!panels.length) { %>
+        <div class="rsec">
+          <p class="rsec__d">Itemised results for this batch have not been entered yet. The laboratory's PDF above is the complete report.</p>
+        </div>
+      <% } %>
+
+      <% if (batch.lab_name) { %>
+        <div class="lab">
+          <p class="lab__h">Tested by</p>
+          <p class="lab__n"><%= batch.lab_name %></p>
+          <div class="lab__m">
+            <% if (batch.lab_license) { %><p><b>Licence</b><%= batch.lab_license %></p><% } %>
+            <% if (batch.lab_accreditation) { %><p><b>Accreditation</b><%= batch.lab_accreditation %></p><% } %>
+            <% if (batch.lab_website) { %>
+              <p><b>Website</b><a href="<%= batch.lab_website %>" target="_blank" rel="noopener nofollow" style="color:var(--o-deep)"><%= batch.lab_website.replace(/^https?:\/\//, '') %></a></p>
+            <% } %>
+            <p style="margin-top:8px;color:var(--ink-3)">Super Feels does not perform its own testing. This laboratory is independent of us and the report above is theirs.</p>
+          </div>
+        </div>
+      <% } %>
+
+      <% if (siblings.length) { %>
+        <div class="rsec">
+          <div class="rsec__h">
+            <h2 class="rsec__t">Other batches of this product</h2>
+          </div>
+          <p class="rsec__d">Each report covers only the batch it names. These are here for reference — check the code on the item you are holding.</p>
+          <div class="sibs">
+            <% siblings.forEach(function (s) { %>
+              <a class="sib" href="/coa/<%= encodeURIComponent(s.batch_code) %>">
+                <%= s.batch_code %>
+                <span class="status status--<%= coa.statusTone(s.status) %>"><%= coa.statusLabel(s.status) %></span>
+              </a>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="rsec">
+        <p class="rsec__d">
+          Something here not matching the product in your hand?
+          <a href="/contact?batch=<%= encodeURIComponent(batch.batch_code) %>" style="color:var(--o-deep)">Tell us about it</a>.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<% if (primaryFile) { %>
+  <%# Loaded only on a report that has a PDF. Both deferred, so they run in DOM
+      order after parsing: the library defines window.pdfjsLib, then the
+      renderer uses it. %>
+  <script src="<%= asset('/js/vendor/pdfjs/pdf.min.js') %>" defer></script>
+  <script src="<%= asset('/js/report-pdf.js') %>" defer></script>
+<% } %>
+
+<%- include('../partials/footer') %>
+<%- include('../partials/foot') %>

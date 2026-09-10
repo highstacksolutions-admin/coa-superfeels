@@ -1,0 +1,18 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<main id="main">
+  <section class="msg">
+    <div class="msg__in">
+      <p class="eyebrow">Super Feels</p>
+      <h1 class="msg__h"><%= heading %></h1>
+      <p class="msg__d"><%= body %></p>
+      <% if (typeof action !== 'undefined' && action) { %>
+        <p class="msg__a"><a class="btn btn--solid" href="<%= action.href %>"><%= action.label %></a></p>
+      <% } %>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>
+<%- include('../partials/foot') %>

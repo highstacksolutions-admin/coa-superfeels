@@ -1,0 +1,50 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<%# Not an error page. Someone is standing in a shop holding a product whose
+    code returned nothing, and what they need is the next step — the likely
+    reasons in plain language, the search box again, and a way to reach a human
+    with the code already filled in. %>
+<main id="main">
+  <section class="nf">
+    <div class="wrap">
+      <div class="nf__in">
+        <p class="eyebrow">No report found</p>
+        <p class="nf__code"><%= entered %></p>
+        <h1 class="nf__h">We have nothing filed under that code.</h1>
+
+        <div class="nf__list">
+          <div class="nf__i">
+            <b>Check the characters again</b>
+            <span>A zero read as an O, or a one as an I, is the usual cause. Dashes, spaces and capitals do not matter — only the letters and digits.</span>
+          </div>
+          <div class="nf__i">
+            <b>Make sure it is the batch code</b>
+            <span>It is printed on the product itself, usually on the base of the container or the bottom edge of the label. An SKU or an order number from the box will not find anything.</span>
+          </div>
+          <div class="nf__i">
+            <b>The batch may not be published yet</b>
+            <span>If the product is very new, its report may still be with the laboratory. Ask us and we will tell you exactly where it is.</span>
+          </div>
+        </div>
+
+        <form class="lookup__field" action="/lookup" method="get" style="margin-top:32px;max-width:460px">
+          <label class="field__label" for="batch">Try another code</label>
+          <input class="lookup__input" type="text" id="batch" name="batch"
+                 placeholder="SF-2409-A12"
+                 autocomplete="off" autocapitalize="characters" spellcheck="false"
+                 enterkeyhint="search" maxlength="80" required>
+          <button class="btn btn--solid btn--wide" type="submit">Look it up</button>
+        </form>
+
+        <div class="nf__a">
+          <a class="btn btn--ghost" href="/contact?batch=<%= encodeURIComponent(entered) %>">Ask us about this code</a>
+          <a class="btn btn--mute" href="/how-to-read-a-coa">How to find your batch code</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>
+<%- include('../partials/foot') %>
