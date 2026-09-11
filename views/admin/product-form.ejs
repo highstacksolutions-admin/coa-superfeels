@@ -93,8 +93,7 @@
               <% batches.forEach(function (b) { %>
                 <tr>
                   <td><a href="/admin/batches/<%= b.id %>"><span class="code"><%= b.batch_code %></span></a></td>
-                  <td><span class="status status--<%= coa.statusTone(b.status) %>"><%= coa.statusLabel(b.status) %></span></td>
-                  <td class="nowrap mono-meta"><%= fmt.date(b.tested_on) %></td>
+                  <td class="nowrap mono-meta"><%= fmt.date(b.created_at) %></td>
                   <td><% if (b.is_published) { %><span class="pill pill--on">Live</span><% } else { %><span class="pill pill--off">Draft</span><% } %></td>
                 </tr>
               <% }) %>

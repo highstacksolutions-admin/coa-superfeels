@@ -104,15 +104,14 @@ router.get('/', asyncRoute(async (req, res) => {
     analytics.missedQueries(30, 8),
   ]);
 
-  // Two lists of things that need doing, rather than a general "recent
-  // activity" feed nobody acts on. A published batch with no PDF and a batch
-  // still marked pending are both states someone has to resolve.
+  // Things that need doing, rather than a general "recent activity" feed nobody
+  // acts on. A draft is waiting on someone to publish it, and a live batch with
+  // no PDF shows customers an empty report.
   const needsAttention = await db.query(
-    `SELECT b.id, b.batch_code, b.status, b.is_published, p.name AS product_name,
-            (SELECT COUNT(*) FROM coa_files f WHERE f.batch_id = b.id) AS files,
-            (SELECT COUNT(*) FROM result_panels rp WHERE rp.batch_id = b.id) AS panels
+    `SELECT b.id, b.batch_code, b.is_published, p.name AS product_name,
+            (SELECT COUNT(*) FROM coa_files f WHERE f.batch_id = b.id) AS files
        FROM batches b
-       JOIN products p ON p.id = b.product_id
+       LEFT JOIN products p ON p.id = b.product_id
       WHERE (b.is_published = 1 AND (SELECT COUNT(*) FROM coa_files f WHERE f.batch_id = b.id) = 0)
          OR (b.is_published = 0)
       ORDER BY b.is_published DESC, b.updated_at DESC

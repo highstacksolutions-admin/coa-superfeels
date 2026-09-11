@@ -124,7 +124,7 @@ function topBatches(days = 30, limit = 10) {
     `SELECT b.id, b.batch_code, p.name AS product_name, COUNT(l.id) AS n
        FROM lookups l
        JOIN batches b  ON b.id = l.batch_id
-       JOIN products p ON p.id = b.product_id
+       LEFT JOIN products p ON p.id = b.product_id
       WHERE l.created_at >= (CURDATE() - INTERVAL ${int(days, 30, 365) - 1} DAY) AND l.found = 1
       GROUP BY b.id, b.batch_code, p.name
       ORDER BY n DESC

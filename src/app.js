@@ -11,7 +11,6 @@ const env = require('./config/env');
 const db = require('./config/db');
 const log = require('./lib/logger');
 const format = require('./lib/format');
-const coa = require('./lib/coa');
 const site = require('./lib/site');
 const assets = require('./lib/assets');
 const { csrf } = require('./middleware/csrf');
@@ -102,25 +101,9 @@ app.use(express.static(env.publicPath, {
 
 // ── Body parsing ────────────────────────────────────────────────────────────
 // The only large payloads are multipart, handled by multer, so the limits here
-// are small.
-//
-// `extended: true` is needed for exactly one form: the results editor posts a
-// whole certificate of analysis at once as
-// `panels[cannabinoids][rows][3][analyte]`, which the simple parser flattens
-// into a meaningless key. A lab report runs to eighty analytes across nine
-// panels, so the parameter limit is raised well above the 1000 default — at
-// seven fields per row the default would silently truncate a long panel, and a
-// results form that drops its last few rows without saying so is the worst
-// possible failure here.
-//
-// `depth` is pinned just above what that form needs rather than left at the
-// default, so a hand-crafted body cannot make the parser build a deep object.
-app.use(express.urlencoded({
-  extended: true,
-  limit: '512kb',
-  parameterLimit: 6000,
-  depth: 5,
-}));
+// are small. Every form posts flat fields, so the simple parser is enough — and
+// a hand-crafted body cannot make it build a nested object.
+app.use(express.urlencoded({ extended: false, limit: '512kb' }));
 app.use(express.json({ limit: '512kb' }));
 
 // ── Sessions ────────────────────────────────────────────────────────────────
@@ -212,7 +195,6 @@ app.use(asyncRoute(async (req, res, next) => {
   res.locals.currentPath = req.path;
   res.locals.query = req.query;
   res.locals.fmt = format;
-  res.locals.coa = coa;
   // Fingerprinted URLs for ./public. See src/lib/assets.js — without this a
   // CSS or JS change does not reach anyone who already has the old file, for
   // as long as the static max-age lasts.

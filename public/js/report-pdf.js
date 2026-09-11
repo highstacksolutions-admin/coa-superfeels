@@ -13,8 +13,8 @@
 //     IDM hooks http(s) requests; a blob: URL never makes one, so it cannot be
 //     grabbed.
 //
-// Enhancement only. With JS off the results table is fully readable and the two
-// buttons fall back to their server hrefs (which a no-JS visitor with IDM would
+// Enhancement only. With JS off the page offers a link to open the PDF, and the
+// two buttons fall back to their server hrefs (which a no-JS visitor with IDM would
 // see intercepted — the rare edge this cannot reach).
 
 (function () {

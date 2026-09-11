@@ -463,7 +463,7 @@ main { flex: 1 0 auto; }
 }
 .rpt__code span { color: var(--ink-3); font-size: var(--fs-label); letter-spacing: var(--ls-label); text-transform: uppercase; }
 
-/* Meta grid: tested on, lab, sample id, expiry. */
+/* Meta grid: product size, report date. */
 .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; border-top: var(--bd); }
 .meta__i { padding: var(--s-4) var(--s-4) var(--s-4) 0; border-bottom: var(--bd); }
 .meta__l {
@@ -472,21 +472,6 @@ main { flex: 1 0 auto; }
 }
 .meta__v { margin-top: 5px; font-size: var(--fs-sm); font-weight: 700; word-break: break-word; }
 .meta__v a { color: var(--o-deep); text-decoration: none; border-bottom: 1px solid currentColor; }
-
-/* Potency headline: the two numbers a reader came to check. */
-.potency { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: var(--bd-ink); background: var(--paper); }
-@media (min-width: 620px) { .potency { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); } }
-.potency__i { padding: var(--s-5) var(--s-4); border-right: var(--bd); }
-.potency__i:last-child { border-right: 0; }
-.potency__l {
-  font-family: var(--mono); font-size: var(--fs-label); letter-spacing: var(--ls-label);
-  text-transform: uppercase; color: var(--ink-3);
-}
-.potency__v {
-  font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 700;
-  letter-spacing: var(--ls-head); line-height: 1.05; margin-top: 6px;
-}
-.potency__v small { font-size: .5em; font-weight: 600; color: var(--ink-3); margin-left: 2px; }
 
 /* Download bar. Sticky at the bottom on a phone, like the main site's buy bar:
    the download is the second thing every visitor wants and it must never be a
@@ -528,7 +513,7 @@ main { flex: 1 0 auto; }
 .doc__fallback { padding: var(--s-7) var(--s-5); text-align: center; }
 .doc__fallback p { color: var(--ink-2); font-size: var(--fs-sm); margin-bottom: var(--s-4); }
 
-/* ── Result tables ────────────────────────────────────────────────────────── */
+/* ── Report sections ──────────────────────────────────────────────────────── */
 .rsec { margin-top: var(--s-7); }
 .rsec__h {
   display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center;
@@ -537,69 +522,10 @@ main { flex: 1 0 auto; }
 }
 .rsec__t { font-size: 1.15rem; letter-spacing: var(--ls-head); }
 .rsec__d { margin-top: var(--s-3); color: var(--ink-3); font-size: var(--fs-xs); max-width: 62ch; }
-.rsec__method {
-  font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .08em;
-  text-transform: uppercase; color: var(--ink-4); margin-top: var(--s-2);
-}
 
 /* Wrapped so a wide table scrolls inside its own box instead of pushing the
    page sideways on a phone. */
 .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-.rtable { width: 100%; font-size: var(--fs-sm); min-width: 520px; }
-.rtable th {
-  text-align: left;
-  font-family: var(--mono); font-size: var(--fs-label); font-weight: 600;
-  letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3);
-  padding: var(--s-3) var(--s-3);
-  border-bottom: var(--bd-ink);
-  white-space: nowrap;
-}
-.rtable td { padding: var(--s-3); border-bottom: var(--bd); vertical-align: middle; }
-.rtable tbody tr:hover { background: var(--paper-2); }
-.rtable .analyte { font-weight: 700; }
-/* Numbers are mono and right-aligned so a column of results can be scanned and
-   compared down its length rather than read one row at a time. */
-.rtable .num { text-align: right; font-family: var(--mono); font-size: var(--fs-xs); white-space: nowrap; }
-.rtable .num--big { font-size: var(--fs-sm); font-weight: 600; }
-.rtable .lim { text-align: right; font-family: var(--mono); font-size: var(--fs-label); color: var(--ink-3); white-space: nowrap; }
-.rtable .st { text-align: right; white-space: nowrap; }
-.rtable td.nd { color: var(--ink-4); }
-
-/* Safety panels collapse to a status row and open on demand: the verdict is
-   what matters, the twenty analytes behind it are for the reader who wants
-   them. <details> so it works with no JavaScript at all. */
-.pnl { border: var(--bd); background: var(--paper); margin-bottom: var(--s-2); }
-.pnl > summary {
-  display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; justify-content: space-between;
-  padding: var(--s-4);
-  cursor: pointer;
-  list-style: none;
-}
-.pnl > summary::-webkit-details-marker { display: none; }
-.pnl > summary:hover { background: var(--paper-2); }
-.pnl__l { display: grid; gap: 4px; min-width: 0; }
-.pnl__n { font-family: var(--mono); font-size: var(--fs-btn); font-weight: 600; letter-spacing: var(--ls-label); text-transform: uppercase; }
-.pnl__s { font-size: var(--fs-xs); color: var(--ink-3); }
-.pnl__r { display: flex; gap: var(--s-3); align-items: center; }
-.pnl__more {
-  font-family: var(--mono); font-size: var(--fs-label); letter-spacing: var(--ls-label);
-  text-transform: uppercase; color: var(--ink-4);
-}
-.pnl[open] .pnl__more::after { content: 'Hide'; }
-.pnl:not([open]) .pnl__more::after { content: 'Show'; }
-.pnl__b { padding: 0 var(--s-4) var(--s-4); border-top: var(--bd); }
-.pnl__empty { padding: var(--s-4); font-size: var(--fs-xs); color: var(--ink-3); }
-
-/* Lab attribution. The reader's assurance that we did not write this. */
-.lab { border: var(--bd); background: var(--cream); padding: var(--s-5); margin-top: var(--s-7); }
-.lab__h {
-  font-family: var(--mono); font-size: var(--fs-label); letter-spacing: var(--ls-nav);
-  text-transform: uppercase; color: var(--o-deep);
-}
-.lab__n { font-size: 1.15rem; margin-top: var(--s-2); letter-spacing: var(--ls-head); }
-.lab__m { margin-top: var(--s-3); display: grid; gap: 6px; font-size: var(--fs-xs); color: var(--ink-2); }
-.lab__m b { font-family: var(--mono); font-size: var(--fs-label); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--ink-3); margin-right: 6px; }
 
 /* Other batches of the same product. */
 .sibs { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
