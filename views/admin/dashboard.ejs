@@ -77,7 +77,7 @@
                 <tr>
                   <td>
                     <a href="/admin/batches/<%= b.id %>"><span class="code"><%= b.batch_code %></span></a>
-                    <div class="mono-meta" style="margin-top:3px"><%= b.product_name %></div>
+                    <% if (b.product_name) { %><div class="mono-meta" style="margin-top:3px"><%= b.product_name %></div><% } %>
                   </td>
                   <td class="nowrap" style="text-align:right">
                     <% if (!b.is_published) { %>
@@ -108,7 +108,7 @@
                 <tr>
                   <td>
                     <a href="/coa/<%= encodeURIComponent(b.batch_code) %>" target="_blank" rel="noopener"><span class="code"><%= b.batch_code %></span></a>
-                    <div class="mono-meta" style="margin-top:3px"><%= b.product_name %></div>
+                    <% if (b.product_name) { %><div class="mono-meta" style="margin-top:3px"><%= b.product_name %></div><% } %>
                   </td>
                   <td class="num"><%= fmt.count(b.n) %></td>
                 </tr>

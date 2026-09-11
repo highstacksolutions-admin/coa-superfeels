@@ -46,6 +46,16 @@ const imageUpload = multer({
 });
 
 /**
+ * Whether the bytes are actually a PDF. The MIME type checked above is only
+ * what the browser guessed from the file extension, and the report page draws
+ * the file with PDF.js, which cannot render a renamed Word document. The spec
+ * allows the header anywhere in the first 1024 bytes.
+ */
+function isPdf(buffer) {
+  return Buffer.isBuffer(buffer) && buffer.subarray(0, 1024).includes('%PDF-');
+}
+
+/**
  * Translate multer's own errors into something a person can act on. Left alone,
  * a file over the limit produces "LIMIT_FILE_SIZE" on a 500 page.
  */
@@ -81,4 +91,4 @@ function singleImage(field) {
   return [imageUpload.single(field), translateUploadErrors, enforceMultipartCsrf];
 }
 
-module.exports = { pdfFields, singleImage, IMAGE_MIMES, PDF_MIMES };
+module.exports = { pdfFields, singleImage, isPdf, IMAGE_MIMES, PDF_MIMES };

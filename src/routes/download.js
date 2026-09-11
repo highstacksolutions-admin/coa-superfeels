@@ -52,18 +52,19 @@ router.get('/:id', limits.download, asyncRoute(async (req, res, next) => {
   // is no window in which a row is found and then judged.
   const file = await db.one(
     `SELECT f.id, f.batch_id, f.original_filename, f.file_path, f.mime_type, f.file_size,
-            b.batch_code, b.is_published, p.is_published AS product_published
+            b.batch_code, b.is_published, p.id AS product_id, p.is_published AS product_published
        FROM coa_files f
        JOIN batches b  ON b.id = f.batch_id
-       JOIN products p ON p.id = b.product_id
+       LEFT JOIN products p ON p.id = b.product_id
       WHERE f.id = ?`,
     [id]
   );
 
   // A draft batch's report is treated as absent rather than forbidden. A 403
   // would confirm that the batch exists, which is exactly what an unpublished
-  // batch should not do.
-  if (!file || !file.is_published || !file.product_published) {
+  // batch should not do. A batch filed under no product answers to its own
+  // publish flag alone.
+  if (!file || !file.is_published || (file.product_id && !file.product_published)) {
     const err = new Error('That report is not available.');
     err.status = 404;
     return next(err);

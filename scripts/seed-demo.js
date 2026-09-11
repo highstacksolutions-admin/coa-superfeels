@@ -2,19 +2,64 @@
 'use strict';
 
 // Demo data so the site shows something real to look at: a couple of labs, a
-// few products, and batches that exercise every state — a clean pass, a fail,
-// and one still pending. Idempotent: it clears the demo rows it owns first, so
-// running it twice does not pile up duplicates.
+// few products, and batches that each carry a lab report PDF — including one
+// filed under no product and one left as a draft. Idempotent: it clears the
+// demo rows it owns first, so running it twice does not pile up duplicates.
 //
 //   npm run seed:demo
+//
+// The PDFs are generated here, one plain page each and marked as demonstration
+// documents, standing in for the laboratory's real report.
 
+const fsp = require('fs/promises');
 const db = require('../src/config/db');
+const storage = require('../src/lib/storage');
 const { batchKey } = require('../src/lib/validate');
+
+/**
+ * A minimal one-page PDF of text lines, built by hand so the seed needs no PDF
+ * library. ASCII text only: it uses the standard Helvetica font, unembedded.
+ */
+function demoPdf(lines) {
+  const esc = (s) => String(s).replace(/[\\()]/g, (c) => `\\${c}`);
+  let y = 730;
+  const content = lines.map(([size, text]) => {
+    const op = `BT /F1 ${size} Tf 72 ${y} Td (${esc(text)}) Tj ET`;
+    y -= size + 14;
+    return op;
+  }).join('\n');
+
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Length ${Buffer.byteLength(content, 'latin1')} >>\nstream\n${content}\nendstream`,
+  ];
+
+  let pdf = '%PDF-1.4\n';
+  const offsets = [];
+  objects.forEach((body, i) => {
+    offsets.push(Buffer.byteLength(pdf, 'latin1'));
+    pdf += `${i + 1} 0 obj\n${body}\nendobj\n`;
+  });
+  const xref = Buffer.byteLength(pdf, 'latin1');
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  pdf += offsets.map((at) => `${String(at).padStart(10, '0')} 00000 n \n`).join('');
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(pdf, 'latin1');
+}
 
 async function main() {
   console.log('Seeding demo data…');
 
-  // Wipe in FK order. Only touches content this script created.
+  // Report files on disk first, while their rows still say where they are.
+  for (const f of await db.query('SELECT file_path FROM coa_files')) {
+    await storage.remove(f.file_path);
+  }
+
+  // Wipe in FK order. The results tables are no longer written, but clearing
+  // them keeps a re-seed from leaving rows behind from the older design.
   await db.query('DELETE FROM results');
   await db.query('DELETE FROM result_panels');
   await db.query('DELETE FROM coa_files');
@@ -24,16 +69,16 @@ async function main() {
   await db.query('DELETE FROM products');
   await db.query('DELETE FROM labs');
 
-  const lab1 = (await db.query(
+  await db.query(
     `INSERT INTO labs (name, slug, license_no, accreditation, website, is_active)
      VALUES (?, ?, ?, ?, ?, 1)`,
     ['Anresco Laboratories', 'anresco', 'C8-0000123-LIC', 'ISO/IEC 17025:2017', 'https://www.anresco.com']
-  )).insertId;
-  const lab2 = (await db.query(
+  );
+  await db.query(
     `INSERT INTO labs (name, slug, license_no, accreditation, website, is_active)
      VALUES (?, ?, ?, ?, ?, 1)`,
     ['SC Labs', 'sc-labs', 'C8-0000456-LIC', 'ISO/IEC 17025:2017', 'https://www.sclabs.com']
-  )).insertId;
+  );
 
   const products = [
     { name: 'Calm Gummies', category: 'Gummies', size: '20 ct', sku: 'SF-GUM-CALM' },
@@ -53,142 +98,50 @@ async function main() {
     )).insertId;
   }
 
-  // A batch, its panels and analytes. `pub` false makes a draft.
-  async function makeBatch(opts) {
-    const key = batchKey(opts.code);
+  const shard = storage.shardDir();
+  await storage.ensureDir(shard);
+
+  // A batch and its report, dated `daysAgo`. `pub` false makes a draft.
+  async function makeBatch({ code, product = null, pub = true, daysAgo = 0 }) {
+    const when = `NOW() - INTERVAL ${Number(daysAgo)} DAY`;
     const id = (await db.query(
-      `INSERT INTO batches (product_id, lab_id, batch_code, batch_key, status, lab_sample_id,
-              manufactured_on, tested_on, expires_on, total_thc, total_cbd, potency_unit, is_published)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '%', ?)`,
-      [opts.productId, opts.labId, opts.code, key, opts.status, opts.sampleId,
-       opts.made, opts.tested, opts.expires, opts.thc, opts.cbd, opts.pub ? 1 : 0]
+      `INSERT INTO batches (product_id, batch_code, batch_key, is_published, created_at)
+       VALUES (?, ?, ?, ?, ${when})`,
+      [product ? productIds[product] : null, code, batchKey(code), pub ? 1 : 0]
     )).insertId;
 
-    for (const panel of opts.panels) {
-      const panelId = (await db.query(
-        `INSERT INTO result_panels (batch_id, panel, status, method, summary) VALUES (?, ?, ?, ?, ?)`,
-        [id, panel.key, panel.status, panel.method || null, panel.summary || null]
-      )).insertId;
-      let s = 0;
-      for (const r of (panel.rows || [])) {
-        const numeric = Number(String(r[1]).replace(/[^0-9.]/g, '')) || null;
-        await db.query(
-          `INSERT INTO results (panel_id, analyte, value_text, numeric_value, unit, lod, loq, limit_text, status, sort_order)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [panelId, r[0], r[1], numeric, r[2] || null, r[3] || null, r[4] || null, r[5] || null, r[6] || 'na', s++]
-        );
-      }
-    }
+    const pdf = demoPdf([
+      [22, 'Certificate of Analysis'],
+      [11, 'Demonstration document - not a genuine laboratory report'],
+      [14, `Product: ${product || 'Kava-Kratom Shot'}`],
+      [14, `Lot number: ${code}`],
+      [11, 'All panels tested: PASS'],
+      [9, 'Generated by scripts/seed-demo.js for the Super Feels COA portal.'],
+    ]);
+    const stored = storage.storedName(`${code}.pdf`);
+    const relPath = `${shard}/${stored}`.replace(/\\/g, '/');
+    await fsp.writeFile(storage.resolve(relPath), pdf);
+    await db.query(
+      `INSERT INTO coa_files (batch_id, original_filename, stored_filename, file_path, mime_type, file_size, is_primary, created_at)
+       VALUES (?, ?, ?, ?, 'application/pdf', ?, 1, ${when})`,
+      [id, `${code}-coa.pdf`, stored, relPath, pdf.length]
+    );
     return id;
   }
 
-  const cannabinoids = (thc, cbd) => ({
-    key: 'cannabinoids', status: 'pass', method: 'HPLC-DAD',
-    rows: [
-      ['Δ9-THC', thc, '%', '0.01', '0.03', '', 'na'],
-      ['THCA', '0.12', '%', '0.01', '0.03', '', 'na'],
-      ['CBD', cbd, '%', '0.01', '0.03', '', 'na'],
-      ['CBDA', '0.04', '%', '0.01', '0.03', '', 'na'],
-      ['CBG', '0.31', '%', '0.01', '0.03', '', 'na'],
-      ['CBN', 'ND', '%', '0.01', '0.03', '', 'nd'],
-    ],
-  });
-  const terpenes = {
-    key: 'terpenes', status: 'pass', method: 'GC-MS',
-    rows: [
-      ['β-Myrcene', '0.42', '%', '0.01', '0.03', '', 'na'],
-      ['Limonene', '0.28', '%', '0.01', '0.03', '', 'na'],
-      ['β-Caryophyllene', '0.19', '%', '0.01', '0.03', '', 'na'],
-      ['Linalool', '0.08', '%', '0.01', '0.03', '', 'na'],
-    ],
-  };
-  const safePass = (unit, limit) => (key, method) => ({
-    key, status: 'pass', method,
-    rows: [['All analytes', 'ND', unit, '', '', limit, 'nd']],
-    summary: 'All analytes below the action limit.',
-  });
-  const pesticidesPass = { key: 'pesticides', status: 'pass', method: 'LC-MS/MS', summary: 'Screened against CA action limits. All pass.', rows: [
-    ['Abamectin', 'ND', 'ppb', '', '', '300', 'nd'],
-    ['Bifenazate', 'ND', 'ppb', '', '', '5000', 'nd'],
-    ['Myclobutanil', 'ND', 'ppb', '', '', '9000', 'nd'],
-  ] };
-  const metalsPass = { key: 'heavy_metals', status: 'pass', method: 'ICP-MS', rows: [
-    ['Lead', 'ND', 'ppm', '', '', '0.5', 'nd'],
-    ['Arsenic', 'ND', 'ppm', '', '', '1.5', 'nd'],
-    ['Cadmium', 'ND', 'ppm', '', '', '0.5', 'nd'],
-    ['Mercury', 'ND', 'ppm', '', '', '3.0', 'nd'],
-  ] };
-  const microPass = { key: 'microbials', status: 'pass', method: 'qPCR', rows: [
-    ['Salmonella', 'Not detected', 'CFU/g', '', '', 'Absent', 'pass'],
-    ['E. coli (STEC)', 'Not detected', 'CFU/g', '', '', 'Absent', 'pass'],
-  ] };
-  const solventsPass = { key: 'residual_solvents', status: 'pass', method: 'GC-FID', rows: [
-    ['Ethanol', '210', 'ppm', '', '', '5000', 'pass'],
-    ['Butane', 'ND', 'ppm', '', '', '5000', 'nd'],
-  ] };
-
-  // 1. Clean pass, popular.
-  await makeBatch({
-    productId: productIds['Calm Gummies'], labId: lab1, code: 'SF-2409-A12', status: 'pass', pub: true,
-    sampleId: 'ANR-24-88213', made: '2024-08-15', tested: '2024-09-02', expires: '2026-09-01',
-    thc: '0.18', cbd: '24.60',
-    panels: [cannabinoids('0.18', '24.60'), terpenes, pesticidesPass, metalsPass, microPass, solventsPass,
-      { key: 'mycotoxins', status: 'pass', method: 'LC-MS/MS', rows: [['Aflatoxin B1', 'ND', 'ppb', '', '', '20', 'nd']] }],
-  });
-
-  // 2. Full-spectrum oil, pass, different lab.
-  await makeBatch({
-    productId: productIds['Full-Spectrum Oil'], labId: lab2, code: 'SF-2410-B07', status: 'pass', pub: true,
-    sampleId: 'SC-24-10442', made: '2024-09-20', tested: '2024-10-05', expires: '2026-10-01',
-    thc: '2.40', cbd: '33.10',
-    panels: [cannabinoids('2.40', '33.10'), terpenes, pesticidesPass, metalsPass, microPass, solventsPass],
-  });
-
-  // 3. A FAIL — heavy metals over the lead limit.
-  await makeBatch({
-    productId: productIds['Recovery Balm'], labId: lab1, code: 'SF-2408-C03', status: 'fail', pub: true,
-    sampleId: 'ANR-24-77120', made: '2024-07-10', tested: '2024-08-01', expires: '2026-08-01',
-    thc: '0.05', cbd: '12.00',
-    panels: [
-      cannabinoids('0.05', '12.00'),
-      { key: 'heavy_metals', status: 'fail', method: 'ICP-MS', summary: 'Lead exceeded the action limit.', rows: [
-        ['Lead', '0.82', 'ppm', '', '', '0.5', 'fail'],
-        ['Arsenic', 'ND', 'ppm', '', '', '1.5', 'nd'],
-        ['Cadmium', 'ND', 'ppm', '', '', '0.5', 'nd'],
-        ['Mercury', 'ND', 'ppm', '', '', '3.0', 'nd'],
-      ] },
-      pesticidesPass, microPass,
-    ],
-  });
-
-  // 4. Pending — sent to the lab, not all panels back.
-  await makeBatch({
-    productId: productIds['Sleep Softgels'], labId: lab2, code: 'SF-2411-D19', status: 'pending', pub: true,
-    sampleId: 'SC-24-11890', made: '2024-10-25', tested: '2024-11-08', expires: '2026-11-01',
-    thc: '0.10', cbd: '15.50',
-    panels: [
-      cannabinoids('0.10', '15.50'),
-      { key: 'pesticides', status: 'not_tested', rows: [] },
-    ],
-  });
-
-  // 5. A second Calm Gummies batch, so the report shows siblings.
-  await makeBatch({
-    productId: productIds['Calm Gummies'], labId: lab1, code: 'SF-2405-A04', status: 'pass', pub: true,
-    sampleId: 'ANR-24-61002', made: '2024-04-12', tested: '2024-05-02', expires: '2026-05-01',
-    thc: '0.20', cbd: '23.90',
-    panels: [cannabinoids('0.20', '23.90'), terpenes, pesticidesPass, metalsPass],
-  });
-
-  // 6. A draft, so the admin "needs attention" list is not empty.
-  await makeBatch({
-    productId: productIds['Full-Spectrum Oil'], labId: lab2, code: 'SF-2412-B11', status: 'pending', pub: false,
-    sampleId: null, made: '2024-11-30', tested: null, expires: null, thc: null, cbd: null,
-    panels: [],
-  });
+  await makeBatch({ code: 'SF-2409-A12', product: 'Calm Gummies', daysAgo: 20 });
+  await makeBatch({ code: 'SF-2410-B07', product: 'Full-Spectrum Oil', daysAgo: 12 });
+  await makeBatch({ code: 'SF-2408-C03', product: 'Recovery Balm', daysAgo: 30 });
+  await makeBatch({ code: 'SF-2411-D19', product: 'Sleep Softgels', daysAgo: 5 });
+  // A second Calm Gummies batch, so the report shows siblings.
+  await makeBatch({ code: 'SF-2405-A04', product: 'Calm Gummies', daysAgo: 60 });
+  // Filed with nothing but a code and the PDF — the PDF names the product.
+  await makeBatch({ code: 'SO-2603-K01', daysAgo: 2 });
+  // A draft, so the admin "needs attention" list is not empty.
+  await makeBatch({ code: 'SF-2412-B11', product: 'Full-Spectrum Oil', pub: false, daysAgo: 1 });
 
   // A few lookups so the analytics chart is not blank.
-  const found = await db.query("SELECT id FROM batches WHERE is_published = 1 LIMIT 3");
+  const found = await db.query('SELECT id FROM batches WHERE is_published = 1 LIMIT 3');
   for (let d = 0; d < 14; d++) {
     const when = `DATE_SUB(NOW(), INTERVAL ${d} DAY)`;
     const hits = Math.floor(Math.random() * 6) + 1;
@@ -206,7 +159,7 @@ async function main() {
     }
   }
 
-  console.log('Done. Demo batches: SF-2409-A12 (pass), SF-2408-C03 (fail), SF-2411-D19 (pending).');
+  console.log('Done. Try SF-2409-A12, SO-2603-K01 (no product), or SF-2412-B11 (a draft, so not public).');
   await db.pool.end();
 }
 

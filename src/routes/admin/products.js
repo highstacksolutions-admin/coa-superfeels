@@ -97,8 +97,8 @@ router.get('/:id', asyncRoute(async (req, res, next) => {
   if (!product) return next();
 
   const batches = await db.query(
-    `SELECT id, batch_code, status, is_published, tested_on
-       FROM batches WHERE product_id = ? ORDER BY tested_on DESC, id DESC LIMIT 20`,
+    `SELECT id, batch_code, is_published, created_at
+       FROM batches WHERE product_id = ? ORDER BY created_at DESC, id DESC LIMIT 20`,
     [id]
   );
 

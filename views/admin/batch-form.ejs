@@ -7,7 +7,11 @@
 
 <% if (!isNew) { %>
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px">
-    <span class="status status--<%= coa.statusTone(verdict) %> status--lg"><%= coa.statusLabel(verdict) %></span>
+    <% if (batch.is_published) { %>
+      <span class="pill pill--on">Live</span>
+    <% } else { %>
+      <span class="pill pill--off">Draft</span>
+    <% } %>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <% if (batch.is_published) { %>
         <a class="btn btn--mute btn--sm" href="/coa/<%= encodeURIComponent(batch.batch_code) %>" target="_blank" rel="noopener">View public report ↗</a>
@@ -16,99 +20,64 @@
   </div>
 <% } %>
 
-<%# ── The batch itself ──────────────────────────────────────────────────── %>
+<%# ── The batch itself ────────────────────────────────────────────────────
+    A new batch is its number and the lab's PDF, saved together in one form.
+    Nothing from the report is typed in: the PDF is the record. %>
 <div class="panel">
-  <div class="panel__h"><h2>Batch details</h2></div>
+  <div class="panel__h"><h2><%= isNew ? 'Upload a lab report' : 'Batch details' %></h2></div>
   <div class="panel__b">
-    <form class="form form--wide" method="post" action="<%= isNew ? '/admin/batches/new' : '/admin/batches/' + batch.id %>">
+    <form class="form form--wide" method="post"
+          action="<%= isNew ? '/admin/batches/new' : '/admin/batches/' + batch.id %>"
+          <% if (isNew) { %>enctype="multipart/form-data"<% } %>>
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
       <div class="formgrid formgrid--2">
         <div class="field <%= err('batch_code') %>">
-          <label for="batch_code">Batch code *</label>
+          <label for="batch_code">Batch number *</label>
           <input type="text" id="batch_code" name="batch_code" value="<%= val('batch_code') %>"
                  autocomplete="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:.06em" required>
           <p class="field__error"><%= errors.batch_code || '' %></p>
-          <p class="field__hint">Exactly as printed on the product. Dashes and capitals are cosmetic — the lookup ignores them.</p>
+          <p class="field__hint">As printed on the product — the lot number on the lab report. Dashes and capitals are cosmetic; the lookup ignores them.</p>
         </div>
         <div class="field <%= err('product_id') %>">
-          <label for="product_id">Product *</label>
-          <select id="product_id" name="product_id" required>
+          <label for="product_id">Product</label>
+          <select id="product_id" name="product_id">
+            <option value="">— none —</option>
             <% products.forEach(function (p) { %>
               <option value="<%= p.id %>" <%= String(val('product_id')) === String(p.id) ? 'selected' : '' %>><%= p.name %></option>
             <% }) %>
           </select>
           <p class="field__error"><%= errors.product_id || '' %></p>
+          <p class="field__hint">Optional. Used as the report's heading and to link other batches of the same product.</p>
         </div>
       </div>
 
-      <div class="formgrid formgrid--3">
-        <div class="field">
-          <label for="status">Overall result</label>
-          <select id="status" name="status">
-            <% coa.BATCH_STATUSES.forEach(function (s) { %>
-              <option value="<%= s %>" <%= val('status') === s ? 'selected' : '' %>><%= coa.statusLabel(s) %></option>
-            <% }) %>
-          </select>
-          <p class="field__hint">A failing safety panel overrides this to Fail automatically.</p>
+      <% if (isNew) { %>
+        <%# Not `required`: the input is visually hidden inside the drop zone, and
+            a browser cannot point at a hidden control to say it is missing. The
+            server says so instead. %>
+        <div class="field <%= err('report') %>">
+          <label class="drop" id="drop">
+            <span class="drop__h">Choose the lab report PDF, or drop it here</span>
+            <span class="drop__d">The laboratory's own signed report, exactly as they sent it. PDF only.</span>
+            <span class="drop__picked" id="drop-picked" hidden></span>
+            <input type="file" name="report" accept="application/pdf" id="report-input">
+          </label>
+          <p class="field__error"><%= errors.report || '' %></p>
         </div>
+      <% } else { %>
         <div class="field">
-          <label for="lab_id">Testing lab</label>
-          <select id="lab_id" name="lab_id">
-            <option value="">— none —</option>
-            <% labs.forEach(function (l) { %>
-              <option value="<%= l.id %>" <%= String(val('lab_id')) === String(l.id) ? 'selected' : '' %>><%= l.name %></option>
-            <% }) %>
-          </select>
-          <% if (!labs.length) { %><p class="field__hint"><a href="/admin/labs/new">Add a lab</a> to attribute the report.</p><% } %>
+          <label for="notes">Internal notes</label>
+          <textarea id="notes" name="notes" style="min-height:70px"><%= val('notes') %></textarea>
+          <p class="field__hint">Never shown publicly.</p>
         </div>
-        <div class="field">
-          <label for="lab_sample_id">Lab sample ID</label>
-          <input type="text" id="lab_sample_id" name="lab_sample_id" value="<%= val('lab_sample_id') %>">
-        </div>
-      </div>
-
-      <div class="formgrid formgrid--3">
-        <div class="field">
-          <label for="total_thc">Total THC</label>
-          <input type="text" id="total_thc" name="total_thc" value="<%= val('total_thc') !== '' && val('total_thc') !== null ? Number(val('total_thc')).toFixed(2) : '' %>" inputmode="decimal" placeholder="e.g. 18.40">
-        </div>
-        <div class="field">
-          <label for="total_cbd">Total CBD</label>
-          <input type="text" id="total_cbd" name="total_cbd" value="<%= val('total_cbd') !== '' && val('total_cbd') !== null ? Number(val('total_cbd')).toFixed(2) : '' %>" inputmode="decimal" placeholder="e.g. 0.05">
-        </div>
-        <div class="field">
-          <label for="potency_unit">Potency unit</label>
-          <input type="text" id="potency_unit" name="potency_unit" value="<%= val('potency_unit') || '%' %>" maxlength="12">
-        </div>
-      </div>
-
-      <div class="formgrid formgrid--3">
-        <div class="field">
-          <label for="manufactured_on">Produced</label>
-          <input type="date" id="manufactured_on" name="manufactured_on" value="<%= fmt.dateInput(val('manufactured_on')) %>">
-        </div>
-        <div class="field">
-          <label for="tested_on">Tested</label>
-          <input type="date" id="tested_on" name="tested_on" value="<%= fmt.dateInput(val('tested_on')) %>">
-        </div>
-        <div class="field">
-          <label for="expires_on">Best before</label>
-          <input type="date" id="expires_on" name="expires_on" value="<%= fmt.dateInput(val('expires_on')) %>">
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="notes">Internal notes</label>
-        <textarea id="notes" name="notes" style="min-height:70px"><%= val('notes') %></textarea>
-        <p class="field__hint">Never shown publicly.</p>
-      </div>
+      <% } %>
 
       <div class="fieldset" style="margin-top:8px">
         <div class="field--check <%= err('is_published') %>">
           <input type="checkbox" id="is_published" name="is_published" value="1" <%= val('is_published') ? 'checked' : '' %>>
           <label for="is_published">
-            <strong>Published</strong> — live at <code style="font-family:var(--mono)">/coa/&lt;code&gt;</code> and findable by lookup.
+            <strong>Published</strong> — live at <code style="font-family:var(--mono)">/coa/&lt;batch number&gt;</code> and findable by lookup.
             <% if (errors.is_published) { %><br><span style="color:var(--fail)"><%= errors.is_published %></span><% } %>
           </label>
         </div>
@@ -159,22 +128,23 @@
             </tbody>
           </table>
         </div>
+        <p class="muted" style="margin-bottom:16px;font-size:var(--fs-sm)">The primary PDF is the report customers see. To correct it, upload the new PDF, make it primary, then delete the old one.</p>
       <% } else { %>
-        <p class="muted" style="margin-bottom:16px;font-size:var(--fs-sm)">No report uploaded yet. The primary PDF is what a customer downloads from the report page.</p>
+        <p class="muted" style="margin-bottom:16px;font-size:var(--fs-sm)">No report uploaded yet. Upload the lab's PDF to publish this batch.</p>
       <% } %>
 
       <form method="post" action="/admin/batches/<%= batch.id %>/files" enctype="multipart/form-data" id="report-upload">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <label class="drop" id="drop">
-          <span class="drop__h">Choose a PDF, or drop one here</span>
-          <span class="drop__d">The laboratory's own signed report. PDF only.</span>
+          <span class="drop__h"><%= files && files.length ? 'Add another PDF, or drop one here' : 'Choose a PDF, or drop one here' %></span>
+          <span class="drop__d">The laboratory's own signed report, or a supporting document. PDF only.</span>
           <span class="drop__picked" id="drop-picked" hidden></span>
           <input type="file" name="reports" accept="application/pdf" multiple id="report-input">
         </label>
         <div class="formgrid formgrid--2" style="margin-top:16px">
           <div class="field">
             <label for="label">Label (optional)</label>
-            <input type="text" id="label" name="label" placeholder="e.g. Full panel, R&D lab">
+            <input type="text" id="label" name="label" placeholder="e.g. Corrected report, Microbials retest">
           </div>
           <div style="display:flex;align-items:flex-end">
             <button class="btn btn--solid btn--wide" type="submit">Upload</button>
@@ -184,34 +154,11 @@
     </div>
   </div>
 
-  <%# ── Results editor ──────────────────────────────────────────────────── %>
-  <div class="panel panel--wide">
-    <div class="panel__h">
-      <h2>Results</h2>
-      <span class="mono-meta">Transcribed from the PDF</span>
-    </div>
-    <div class="panel__b">
-      <p class="muted" style="font-size:var(--fs-sm);margin-bottom:20px">
-        Each panel saves on its own. Potency panels show as a full table on the report; safety panels collapse to their verdict. Leave a panel "not tested" to hide it entirely.
-      </p>
-
-      <%
-        var byKey = {};
-        (panels || []).forEach(function (p) { byKey[p.panel] = p; });
-      %>
-
-      <% allPanels.forEach(function (meta) { %>
-        <% var existing = byKey[meta.key]; %>
-        <%- include('../partials/results-panel', { meta: meta, existing: existing, batch: batch, csrfToken: csrfToken, coa: coa }) %>
-      <% }) %>
-    </div>
-  </div>
-
   <%# ── Danger zone ─────────────────────────────────────────────────────── %>
   <div class="panel">
     <div class="panel__h"><h2>Delete batch</h2></div>
     <div class="panel__b">
-      <p class="muted" style="font-size:var(--fs-sm);margin-bottom:16px">Removes the batch, its results and its report files. Lookup history is kept but detached. This cannot be undone.</p>
+      <p class="muted" style="font-size:var(--fs-sm);margin-bottom:16px">Removes the batch and its report files. Lookup history is kept but detached. This cannot be undone.</p>
       <form method="post" action="/admin/batches/<%= batch.id %>/delete" data-confirm="Delete batch <%= batch.batch_code %> and everything attached to it?">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button class="btn btn--danger" type="submit">Delete this batch</button>

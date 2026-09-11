@@ -2,7 +2,6 @@
 
 const express = require('express');
 const db = require('../config/db');
-const coa = require('../lib/coa');
 const batches = require('../lib/batches');
 const analytics = require('../lib/analytics');
 const limits = require('../middleware/rateLimit');
@@ -71,7 +70,6 @@ router.get('/lookup', limits.lookup, (req, res) => {
       pageScript: '/js/lookup.js',
       products: [],
       totals: { batches: 0, products: 0, labs: 0 },
-      panels: coa.PANELS,
       entered,
       error: 'Enter the batch code printed on your product.',
     });
@@ -108,8 +106,8 @@ router.get('/coa/:code', limits.lookup, asyncRoute(async (req, res) => {
   const siblings = await batches.siblings(batch.product_id, batch.id);
 
   return res.render('pages/report', {
-    title: `${batch.product_name} — batch ${batch.batch_code}`,
-    description: `Independent laboratory results for Super Feels ${batch.product_name}, batch ${batch.batch_code}.`,
+    title: `${batch.product_name || 'Lab report'} — batch ${batch.batch_code}`,
+    description: `Independent laboratory report for Super Feels ${batch.product_name ? `${batch.product_name}, ` : ''}batch ${batch.batch_code}.`,
     // Individual batch reports are for the person holding the product, not for
     // search results. They also go stale as stock sells through, and an indexed
     // report for a batch nobody can buy is worse than no result at all.
